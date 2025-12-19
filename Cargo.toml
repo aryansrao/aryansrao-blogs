@@ -1,0 +1,30 @@
+[package]
+name = "aryansrao-blogs"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+axum = "0.8.1"
+handlebars = "4"
+# Enable all markdown extensions: tables, footnotes, strikethrough, task lists, smart punctuation, heading attributes
+pulldown-cmark = { version = "0.13.0", features = ["html"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+chrono = "0.4"
+tokio = { version = "1", features = ["full"] }
+# Syntax highlighting for code blocks
+syntect = "5.2"
+# HTML escaping for safe output
+html-escape = "0.2"
+# Lazy static for syntax set initialization
+once_cell = "1.19"
+# HTTP client for GitHub API
+reqwest = { version = "0.12", features = ["json"] }
+# Base64 decoding for GitHub content
+base64 = "0.22"
+# UUID for session tokens
+uuid = { version = "1.0", features = ["v4"] }
+# Tower for middleware
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors"] }
+dotenvy = "0.15"

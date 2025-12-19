@@ -1,0 +1,5 @@
+runtime: rust
+startCommand: ./target/release/axum-blog
+buildCommand: cargo build --release
+port: 8080
+memory: 512mb

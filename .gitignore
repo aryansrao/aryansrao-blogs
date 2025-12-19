@@ -1,0 +1,99 @@
+# Rust Project Artifacts
+target/
+Cargo.lock
+*.rlib
+*.rmeta
+
+# IDE and Editor Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.iml
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+*.sublime-project
+.history/
+*.code-workspace
+
+# OS Specific Files
+Thumbs.db
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Environment Configuration
+.env
+.env.local
+.env.*.local
+.env.production
+
+# Node/npm artifacts (if used in frontend)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+
+# Python artifacts (if applicable)
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+ENV/
+.venv
+
+# Build and Compilation
+build/
+dist/
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+
+# Logs
+logs/
+*.log
+.log
+crash.log
+
+# Runtime
+.session
+*.db
+*.sqlite
+*.sqlite3
+.pid
+
+# Dependencies and Caches
+/deps
+/pkg
+.cargo/
+.gradle/
+
+# Testing
+coverage/
+.coverage
+.pytest_cache/
+htmlcov/
+
+# Documentation builds
+docs/_build/
+site/
+
+# Profiling and debugging
+*.profraw
+*.profdata
+perf-data/
+.gdbinit
+.lldbinit
