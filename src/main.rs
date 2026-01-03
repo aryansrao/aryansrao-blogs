@@ -1357,21 +1357,21 @@ User-agent: Baiduspider
 Allow: /
 Crawl-delay: 2
 
-# Block AI training bots (optional - remove if you want AI to train on your content)
+# AI and Specialized Bots
 User-agent: GPTBot
-Disallow: /
+Allow: /
 
 User-agent: ChatGPT-User
-Disallow: /
+Allow: /
 
 User-agent: CCBot
-Disallow: /
+Allow: /
 
 User-agent: anthropic-ai
-Disallow: /
+Allow: /
 
 User-agent: Claude-Web
-Disallow: /
+Allow: /
 
 # Sitemaps
 Sitemap: {}/sitemap.xml
