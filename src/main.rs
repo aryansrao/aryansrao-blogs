@@ -68,8 +68,8 @@ impl Default for SiteConfig {
         let current_year = Local::now().format("%Y").to_string();
         Self {
             title: "Aryan S Rao".to_string(),
-            description: "Technical blog by Aryan S Rao featuring in-depth tutorials on Rust, web development, systems programming, and open-source projects. Learn modern software engineering with practical examples.".to_string(),
-            tagline: "Software Engineer | Rust Enthusiast | Open Source Contributor".to_string(),
+            description: "My own rust and axum powered blog page this auto synces with my github repositories and creates dynamic og-image , sitemaps , rss etc.".to_string(),
+            tagline: "Full Stack Developer | Rust | Java | Python".to_string(),
             url: env::var("SITE_URL").unwrap_or_else(|_| "http://localhost:8080".to_string()),
             author: "aryansrao".to_string(),
             author_full_name: "Aryan S Rao".to_string(),
