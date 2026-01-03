@@ -40,6 +40,7 @@
     {{/if}}
     
     <!-- Favicons & Icons -->
+    <link rel="shortcut icon" href="{{ site.favicon }}" type="image/png">
     <link rel="icon" type="image/png" href="{{ site.favicon }}" sizes="32x32">
     <link rel="icon" type="image/png" href="{{ site.favicon }}" sizes="16x16">
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
@@ -53,8 +54,8 @@
     <meta property="og:url" content="{{ site.url }}/blog/{{ post.slug }}">
     <meta property="og:title" content="{{ post.title }}">
     <meta property="og:description" content="{{ post.summary }}">
-    <meta property="og:image" content="{{ post.image }}">
-    <meta property="og:image:secure_url" content="{{ post.image }}">
+    <meta property="og:image" content="{{ site.url }}/og/post/{{ post.slug }}">
+    <meta property="og:image:secure_url" content="{{ site.url }}/og/post/{{ post.slug }}">
     <meta property="og:image:type" content="image/png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
@@ -78,7 +79,7 @@
     <meta name="twitter:url" content="{{ site.url }}/blog/{{ post.slug }}">
     <meta name="twitter:title" content="{{ post.title }}">
     <meta name="twitter:description" content="{{ post.summary }}">
-    <meta name="twitter:image" content="{{ post.image }}">
+    <meta name="twitter:image" content="{{ site.url }}/og/post/{{ post.slug }}">
     <meta name="twitter:image:alt" content="{{ post.image_alt }}">
     <meta name="twitter:label1" content="Written by">
     <meta name="twitter:data1" content="{{ post.author }}">

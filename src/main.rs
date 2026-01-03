@@ -81,7 +81,7 @@ impl Default for SiteConfig {
             github_handle: "aryansrao".to_string(),
             linkedin_handle: "aryansrao".to_string(),
             logo: "/logo.png".to_string(),
-            favicon: "/favicon.png".to_string(),
+            favicon: "/logo.png".to_string(),
             og_image: "/og-image.png".to_string(),
             theme_color: "#000000".to_string(),
             keywords: "rust programming, web development, axum framework, systems programming, software engineering, rust tutorials, open source, backend development, API development, rust blog".to_string(),
@@ -696,7 +696,7 @@ async fn manifest_json() -> impl IntoResponse {
   "categories": ["education", "technology", "programming"],
   "icons": [
     {{
-      "src": "/favicon.png",
+      "src": "/logo.png",
       "sizes": "32x32",
       "type": "image/png",
       "purpose": "any"
@@ -721,7 +721,7 @@ async fn manifest_json() -> impl IntoResponse {
       "short_name": "Posts",
       "description": "View all blog posts",
       "url": "/",
-      "icons": [{{ "src": "/favicon.png", "sizes": "96x96" }}]
+      "icons": [{{ "src": "/logo.png", "sizes": "96x96" }}]
     }}
   ],
   "related_applications": [],
@@ -751,7 +751,7 @@ async fn browserconfig_xml() -> impl IntoResponse {
 <browserconfig>
   <msapplication>
     <tile>
-      <square70x70logo src="/favicon.png"/>
+      <square70x70logo src="/logo.png"/>
       <square150x150logo src="/logo.png"/>
       <square310x310logo src="/logo.png"/>
       <TileColor>{}</TileColor>
@@ -836,6 +836,268 @@ Canonical: {}/.well-known/security.txt
         .header(header::CACHE_CONTROL, "public, max-age=86400")
         .body(content)
         .unwrap()
+}
+
+// Serve logo.png as favicon
+async fn serve_logo() -> impl IntoResponse {
+    match fs::read("logo.png") {
+        Ok(data) => Response::builder()
+            .status(StatusCode::OK)
+            .header(header::CONTENT_TYPE, "image/png")
+            .header(header::CACHE_CONTROL, "public, max-age=31536000, immutable")
+            .body(axum::body::Body::from(data))
+            .unwrap(),
+        Err(_) => Response::builder()
+            .status(StatusCode::NOT_FOUND)
+            .body(axum::body::Body::from("Logo not found"))
+            .unwrap(),
+    }
+}
+
+// Generate dynamic OG image for blog posts
+async fn og_image(Path(slug): Path<String>) -> impl IntoResponse {
+    let site_config = SiteConfig::default();
+    let posts = get_posts(&site_config);
+    
+    // Find the post by slug
+    let post = posts.iter().find(|p| p.slug == slug);
+    
+    let (title, author, date, reading_time, tags) = match post {
+        Some(p) => (
+            p.title.clone(),
+            p.author.clone(),
+            p.date.clone(),
+            format!("{} min read", p.reading_time),
+            p.tags.join(" · "),
+        ),
+        None => (
+            "Post Not Found".to_string(),
+            site_config.author_full_name.clone(),
+            "".to_string(),
+            "".to_string(),
+            "".to_string(),
+        ),
+    };
+    
+    // Generate the OG image
+    match generate_og_image(&title, &author, &date, &reading_time, &tags, &site_config) {
+        Ok(png_data) => Response::builder()
+            .status(StatusCode::OK)
+            .header(header::CONTENT_TYPE, "image/png")
+            .header(header::CACHE_CONTROL, "public, max-age=31536000, immutable")
+            .body(axum::body::Body::from(png_data))
+            .unwrap(),
+        Err(e) => {
+            eprintln!("Failed to generate OG image: {}", e);
+            Response::builder()
+                .status(StatusCode::INTERNAL_SERVER_ERROR)
+                .body(axum::body::Body::from("Failed to generate image"))
+                .unwrap()
+        }
+    }
+}
+
+// Generate default OG image for homepage
+async fn og_image_default() -> impl IntoResponse {
+    let site_config = SiteConfig::default();
+    
+    match generate_og_image_home(&site_config) {
+        Ok(png_data) => Response::builder()
+            .status(StatusCode::OK)
+            .header(header::CONTENT_TYPE, "image/png")
+            .header(header::CACHE_CONTROL, "public, max-age=31536000, immutable")
+            .body(axum::body::Body::from(png_data))
+            .unwrap(),
+        Err(e) => {
+            eprintln!("Failed to generate OG image: {}", e);
+            Response::builder()
+                .status(StatusCode::INTERNAL_SERVER_ERROR)
+                .body(axum::body::Body::from("Failed to generate image"))
+                .unwrap()
+        }
+    }
+}
+
+fn generate_og_image(
+    title: &str,
+    author: &str,
+    date: &str,
+    reading_time: &str,
+    tags: &str,
+    site_config: &SiteConfig,
+) -> Result<Vec<u8>, String> {
+    // Wrap title text if too long
+    let wrapped_title = wrap_text(title, 38);
+    let title_lines: Vec<&str> = wrapped_title.lines().collect();
+    let title_line_count = title_lines.len().min(3);
+    
+    // Calculate title Y position and font size based on line count
+    let (title_font_size, title_y_start, line_height) = match title_line_count {
+        1 => (64, 280, 0),
+        2 => (56, 240, 70),
+        _ => (48, 200, 60),
+    };
+    
+    // Build title SVG elements with Geist-like font
+    let mut title_svg = String::new();
+    for (i, line) in title_lines.iter().take(3).enumerate() {
+        let y = title_y_start + (i as i32 * line_height);
+        let escaped_line = html_escape::encode_text(line);
+        title_svg.push_str(&format!(
+            "<text x=\"80\" y=\"{}\" font-family=\"SF Pro Display, Inter, Helvetica Neue, Arial\" font-size=\"{}\" font-weight=\"600\" fill=\"#ffffff\">{}</text>",
+            y, title_font_size, escaped_line
+        ));
+    }
+    
+    // Meta info Y position
+    let meta_y = title_y_start + (title_line_count as i32 * line_height) + 60;
+    
+    let escaped_author = html_escape::encode_text(author);
+    let escaped_date = html_escape::encode_text(date);
+    let escaped_reading = html_escape::encode_text(reading_time);
+    let escaped_tags = html_escape::encode_text(tags);
+    let escaped_site = html_escape::encode_text(&site_config.title);
+    
+    let svg = format!(
+        r##"<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <!-- Pure black background -->
+  <rect width="1200" height="630" fill="#000000"/>
+  
+  <!-- Grid pattern -->
+  <defs>
+    <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
+      <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#1a1a1a" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+  
+  <!-- Top accent line -->
+  <rect x="0" y="0" width="1200" height="3" fill="#ffffff"/>
+  
+  <!-- Site name -->
+  <text x="80" y="100" font-family="SF Pro Display, Inter, Helvetica Neue, Arial" font-size="18" font-weight="500" fill="#666666">{}</text>
+  
+  <!-- Title -->
+  {}
+  
+  <!-- Meta info line -->
+  <text x="80" y="{}" font-family="SF Pro Display, Inter, Helvetica Neue, Arial" font-size="20" font-weight="400" fill="#888888">{} · {} · {}</text>
+  
+  <!-- Tags -->
+  <text x="80" y="{}" font-family="SF Pro Display, Inter, Helvetica Neue, Arial" font-size="16" font-weight="400" fill="#555555">{}</text>
+  
+  <!-- Author at bottom -->
+  <text x="80" y="580" font-family="SF Pro Display, Inter, Helvetica Neue, Arial" font-size="20" font-weight="500" fill="#888888">by {}</text>
+  
+  <!-- Bottom accent line -->
+  <rect x="0" y="627" width="1200" height="3" fill="#333333"/>
+</svg>"##,
+        escaped_site,
+        title_svg,
+        meta_y,
+        escaped_author,
+        escaped_date,
+        escaped_reading,
+        meta_y + 40,
+        escaped_tags,
+        escaped_author,
+    );
+    
+    svg_to_png(&svg)
+}
+
+fn generate_og_image_home(site_config: &SiteConfig) -> Result<Vec<u8>, String> {
+    let escaped_title = html_escape::encode_text(&site_config.title);
+    let escaped_tagline = html_escape::encode_text(&site_config.tagline);
+    let escaped_author = html_escape::encode_text(&site_config.author_full_name);
+    
+    let svg = format!(
+        r##"<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <!-- Pure black background -->
+  <rect width="1200" height="630" fill="#000000"/>
+  
+  <!-- Grid pattern -->
+  <defs>
+    <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
+      <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#1a1a1a" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+  
+  <!-- Top accent line -->
+  <rect x="0" y="0" width="1200" height="3" fill="#ffffff"/>
+  
+  <!-- Main title - centered -->
+  <text x="600" y="280" font-family="SF Pro Display, Inter, Helvetica Neue, Arial" font-size="72" font-weight="600" fill="#ffffff" text-anchor="middle">{}</text>
+  
+  <!-- Tagline - centered -->
+  <text x="600" y="360" font-family="SF Pro Display, Inter, Helvetica Neue, Arial" font-size="24" font-weight="400" fill="#888888" text-anchor="middle">{}</text>
+  
+  <!-- Tech stack -->
+  <text x="600" y="420" font-family="SF Pro Display, Inter, Helvetica Neue, Arial" font-size="18" font-weight="400" fill="#555555" text-anchor="middle">Rust · Web Development · Open Source</text>
+  
+  <!-- Author at bottom - centered -->
+  <text x="600" y="560" font-family="SF Pro Display, Inter, Helvetica Neue, Arial" font-size="20" font-weight="500" fill="#666666" text-anchor="middle">{}</text>
+  
+  <!-- Bottom accent line -->
+  <rect x="0" y="627" width="1200" height="3" fill="#333333"/>
+</svg>"##,
+        escaped_title,
+        escaped_tagline,
+        escaped_author,
+    );
+    
+    svg_to_png(&svg)
+}
+
+fn wrap_text(text: &str, max_chars: usize) -> String {
+    let words: Vec<&str> = text.split_whitespace().collect();
+    let mut lines = Vec::new();
+    let mut current_line = String::new();
+    
+    for word in words {
+        if current_line.is_empty() {
+            current_line = word.to_string();
+        } else if current_line.len() + 1 + word.len() <= max_chars {
+            current_line.push(' ');
+            current_line.push_str(word);
+        } else {
+            lines.push(current_line);
+            current_line = word.to_string();
+        }
+    }
+    
+    if !current_line.is_empty() {
+        lines.push(current_line);
+    }
+    
+    lines.join("\n")
+}
+
+fn svg_to_png(svg_str: &str) -> Result<Vec<u8>, String> {
+    use resvg::tiny_skia::Pixmap;
+    use resvg::usvg::{Options, Tree, fontdb};
+    
+    // Load system fonts
+    let mut fontdb = fontdb::Database::new();
+    fontdb.load_system_fonts();
+    
+    let opt = Options {
+        fontdb: std::sync::Arc::new(fontdb),
+        ..Options::default()
+    };
+    
+    let tree = Tree::from_str(svg_str, &opt)
+        .map_err(|e| format!("Failed to parse SVG: {}", e))?;
+    
+    let size = tree.size();
+    let mut pixmap = Pixmap::new(size.width() as u32, size.height() as u32)
+        .ok_or("Failed to create pixmap")?;
+    
+    resvg::render(&tree, resvg::tiny_skia::Transform::default(), &mut pixmap.as_mut());
+    
+    pixmap.encode_png()
+        .map_err(|e| format!("Failed to encode PNG: {}", e))
 }
 
 // Generate XML Sitemap for SEO - Enhanced with comprehensive metadata
@@ -1097,7 +1359,7 @@ async fn atom_feed() -> impl IntoResponse {
     <uri>{}</uri>
   </author>
   <generator uri="https://github.com/aryansrao/aryansrao-blogs">Axum Blog Engine</generator>
-  <icon>{}/favicon.png</icon>
+  <icon>{}/logo.png</icon>
   <logo>{}/logo.png</logo>
   <rights>© {} {}</rights>
 "#,
@@ -2942,6 +3204,14 @@ async fn main() {
         .route("/", get(index))
         .route("/tags/{tag}", get(tag_page))
         .route("/blog/{post_title}", get(single_post))
+        // Static assets - favicon/logo
+        .route("/logo.png", get(serve_logo))
+        .route("/favicon.png", get(serve_logo))
+        .route("/favicon.ico", get(serve_logo))
+        .route("/apple-touch-icon.png", get(serve_logo))
+        // Dynamic OG Image generation
+        .route("/og/post/{slug}", get(og_image))
+        .route("/og-image.png", get(og_image_default))
         // SEO routes - comprehensive feed & sitemap support
         .route("/sitemap.xml", get(sitemap))
         .route("/sitemap-posts.xml", get(sitemap_posts))
