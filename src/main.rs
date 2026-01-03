@@ -975,19 +975,19 @@ fn generate_og_image(
   <rect x="0" y="0" width="1200" height="3" fill="#ffffff"/>
   
   <!-- Site name -->
-  <text x="80" y="100" font-family="SF Pro Display, Inter, Helvetica Neue, Arial" font-size="18" font-weight="500" fill="#666666">{}</text>
+  <text x="80" y="100" font-family="Geist" font-size="18" font-weight="500" fill="#666666">{}</text>
   
   <!-- Title -->
   {}
   
   <!-- Meta info line -->
-  <text x="80" y="{}" font-family="SF Pro Display, Inter, Helvetica Neue, Arial" font-size="20" font-weight="400" fill="#888888">{} · {} · {}</text>
+  <text x="80" y="{}" font-family="Geist" font-size="20" font-weight="400" fill="#888888">{} · {} · {}</text>
   
   <!-- Tags -->
-  <text x="80" y="{}" font-family="SF Pro Display, Inter, Helvetica Neue, Arial" font-size="16" font-weight="400" fill="#555555">{}</text>
+  <text x="80" y="{}" font-family="Geist" font-size="16" font-weight="400" fill="#555555">{}</text>
   
   <!-- Author at bottom -->
-  <text x="80" y="580" font-family="SF Pro Display, Inter, Helvetica Neue, Arial" font-size="20" font-weight="500" fill="#888888">by {}</text>
+  <text x="80" y="580" font-family="Geist" font-size="20" font-weight="500" fill="#888888">by {}</text>
   
   <!-- Bottom accent line -->
   <rect x="0" y="627" width="1200" height="3" fill="#333333"/>
@@ -1028,16 +1028,16 @@ fn generate_og_image_home(site_config: &SiteConfig) -> Result<Vec<u8>, String> {
   <rect x="0" y="0" width="1200" height="3" fill="#ffffff"/>
   
   <!-- Main title - centered -->
-  <text x="600" y="280" font-family="SF Pro Display, Inter, Helvetica Neue, Arial" font-size="72" font-weight="600" fill="#ffffff" text-anchor="middle">{}</text>
+  <text x="600" y="280" font-family="Geist" font-size="72" font-weight="600" fill="#ffffff" text-anchor="middle">{}</text>
   
   <!-- Tagline - centered -->
-  <text x="600" y="360" font-family="SF Pro Display, Inter, Helvetica Neue, Arial" font-size="24" font-weight="400" fill="#888888" text-anchor="middle">{}</text>
+  <text x="600" y="360" font-family="Geist" font-size="24" font-weight="400" fill="#888888" text-anchor="middle">{}</text>
   
   <!-- Tech stack -->
-  <text x="600" y="420" font-family="SF Pro Display, Inter, Helvetica Neue, Arial" font-size="18" font-weight="400" fill="#555555" text-anchor="middle">Rust · Web Development · Open Source</text>
+  <text x="600" y="420" font-family="Geist" font-size="18" font-weight="400" fill="#555555" text-anchor="middle">Rust · Web Development · Open Source</text>
   
   <!-- Author at bottom - centered -->
-  <text x="600" y="560" font-family="SF Pro Display, Inter, Helvetica Neue, Arial" font-size="20" font-weight="500" fill="#666666" text-anchor="middle">{}</text>
+  <text x="600" y="560" font-family="Geist" font-size="20" font-weight="500" fill="#666666" text-anchor="middle">{}</text>
   
   <!-- Bottom accent line -->
   <rect x="0" y="627" width="1200" height="3" fill="#333333"/>
@@ -1078,9 +1078,15 @@ fn svg_to_png(svg_str: &str) -> Result<Vec<u8>, String> {
     use resvg::tiny_skia::Pixmap;
     use resvg::usvg::{Options, Tree, fontdb};
     
-    // Load system fonts
+    // Embed Geist fonts directly for deployment compatibility
+    static GEIST_MEDIUM: &[u8] = include_bytes!("../fonts/Geist-Medium.ttf");
+    static GEIST_SEMIBOLD: &[u8] = include_bytes!("../fonts/Geist-SemiBold.ttf");
+    static GEIST_BOLD: &[u8] = include_bytes!("../fonts/Geist-Bold.ttf");
+    
     let mut fontdb = fontdb::Database::new();
-    fontdb.load_system_fonts();
+    fontdb.load_font_data(GEIST_MEDIUM.to_vec());
+    fontdb.load_font_data(GEIST_SEMIBOLD.to_vec());
+    fontdb.load_font_data(GEIST_BOLD.to_vec());
     
     let opt = Options {
         fontdb: std::sync::Arc::new(fontdb),
