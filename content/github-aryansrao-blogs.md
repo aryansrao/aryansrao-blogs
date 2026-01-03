@@ -1,5 +1,5 @@
 ---
-title: "My blog site - Rust, Axum and Handlebars powered blog site."
+title: "My blog site - Rust and Axum powered blog site."
 date: "2026-01-03"
 tags: ["github", "project", "rust", "axum", "blogs", "rust"]
 summary: "A high-performance, SEO-optimized blog platform built with Rust, Axum, and Handlebars. Features a clean admin panel, GitHub integration for content sync, and comprehensive security measures."
