@@ -36,28 +36,59 @@ const SESSION_DURATION_SECS: u64 = 3600; // 1 hour
 static SYNTAX_SET: Lazy<SyntaxSet> = Lazy::new(|| SyntaxSet::load_defaults_newlines());
 static THEME_SET: Lazy<ThemeSet> = Lazy::new(ThemeSet::load_defaults);
 
-// Site configuration for SEO
+// Site configuration for SEO - Enhanced with comprehensive SEO fields
 #[derive(Serialize, Clone)]
 struct SiteConfig {
     title: String,
     description: String,
+    tagline: String,
     url: String,
     author: String,
+    author_full_name: String,
+    author_job_title: String,
+    author_bio: String,
     language: String,
+    locale: String,
     twitter_handle: String,
+    github_handle: String,
+    linkedin_handle: String,
     logo: String,
+    favicon: String,
+    og_image: String,
+    theme_color: String,
+    keywords: String,
+    copyright_year: String,
+    google_site_verification: String,
+    bing_site_verification: String,
+    yandex_verification: String,
 }
 
 impl Default for SiteConfig {
     fn default() -> Self {
+        let current_year = Local::now().format("%Y").to_string();
         Self {
             title: "Aryan S Rao".to_string(),
-            description: "My own blog page made with rust and axum".to_string(),
+            description: "Technical blog by Aryan S Rao featuring in-depth tutorials on Rust, web development, systems programming, and open-source projects. Learn modern software engineering with practical examples.".to_string(),
+            tagline: "Software Engineer | Rust Enthusiast | Open Source Contributor".to_string(),
             url: env::var("SITE_URL").unwrap_or_else(|_| "http://localhost:8080".to_string()),
             author: "aryansrao".to_string(),
+            author_full_name: "Aryan S Rao".to_string(),
+            author_job_title: "Software Engineer".to_string(),
+            author_bio: "Passionate software engineer specializing in Rust, systems programming, and web development. I write about building high-performance applications and open-source tools.".to_string(),
             language: "en".to_string(),
-            twitter_handle: "@aryansrao".to_string(),
+            locale: "en_US".to_string(),
+            twitter_handle: "@aryan_s_rao".to_string(),
+            github_handle: "aryansrao".to_string(),
+            linkedin_handle: "aryansrao".to_string(),
             logo: "/logo.png".to_string(),
+            favicon: "/favicon.png".to_string(),
+            og_image: "/og-image.png".to_string(),
+            theme_color: "#000000".to_string(),
+            keywords: "rust programming, web development, axum framework, systems programming, software engineering, rust tutorials, open source, backend development, API development, rust blog".to_string(),
+            copyright_year: current_year,
+            google_site_verification: env::var("GOOGLE_SITE_VERIFICATION").unwrap_or_default(),
+            bing_site_verification: env::var("BING_SITE_VERIFICATION").unwrap_or_default(),
+            yandex_verification: env::var("YANDEX_VERIFICATION").unwrap_or_default(),
         }
     }
 }
@@ -576,6 +607,7 @@ async fn index(Extension(hb): Extension<Arc<Handlebars<'_>>>) -> impl IntoRespon
     data.insert("posts_count", serde_json::to_value(posts_count).unwrap());
     data.insert("site", serde_json::to_value(&site_config).unwrap());
     data.insert("current_year", serde_json::to_value(Local::now().format("%Y").to_string()).unwrap());
+    data.insert("current_date_iso", serde_json::to_value(Local::now().format("%Y-%m-%dT%H:%M:%S%:z").to_string()).unwrap());
     
     match hb.render("index.html", &data) {
         Ok(rendered) => Html(rendered).into_response(),
@@ -645,32 +677,204 @@ async fn single_post(
     }
 }
 
-// Generate XML Sitemap for SEO
+// Generate Web App Manifest for PWA support and better SEO
+async fn manifest_json() -> impl IntoResponse {
+    let site_config = SiteConfig::default();
+    let manifest = format!(
+        r##"{{
+  "name": "{name}",
+  "short_name": "{short_name}",
+  "description": "{description}",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "{theme_color}",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "{language}",
+  "dir": "ltr",
+  "categories": ["education", "technology", "programming"],
+  "icons": [
+    {{
+      "src": "/favicon.png",
+      "sizes": "32x32",
+      "type": "image/png",
+      "purpose": "any"
+    }},
+    {{
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }},
+    {{
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }}
+  ],
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {{
+      "name": "All Posts",
+      "short_name": "Posts",
+      "description": "View all blog posts",
+      "url": "/",
+      "icons": [{{ "src": "/favicon.png", "sizes": "96x96" }}]
+    }}
+  ],
+  "related_applications": [],
+  "id": "{url}/"
+}}"##,
+        name = site_config.title,
+        short_name = site_config.author,
+        description = site_config.description,
+        theme_color = site_config.theme_color,
+        language = site_config.language,
+        url = site_config.url
+    );
+    
+    Response::builder()
+        .status(StatusCode::OK)
+        .header(header::CONTENT_TYPE, "application/manifest+json; charset=utf-8")
+        .header(header::CACHE_CONTROL, "public, max-age=86400")
+        .body(manifest)
+        .unwrap()
+}
+
+// Generate browserconfig.xml for Windows tiles
+async fn browserconfig_xml() -> impl IntoResponse {
+    let site_config = SiteConfig::default();
+    let xml = format!(
+        r#"<?xml version="1.0" encoding="utf-8"?>
+<browserconfig>
+  <msapplication>
+    <tile>
+      <square70x70logo src="/favicon.png"/>
+      <square150x150logo src="/logo.png"/>
+      <square310x310logo src="/logo.png"/>
+      <TileColor>{}</TileColor>
+    </tile>
+  </msapplication>
+</browserconfig>"#,
+        site_config.theme_color
+    );
+    
+    Response::builder()
+        .status(StatusCode::OK)
+        .header(header::CONTENT_TYPE, "application/xml; charset=utf-8")
+        .header(header::CACHE_CONTROL, "public, max-age=86400")
+        .body(xml)
+        .unwrap()
+}
+
+// Generate humans.txt for attribution
+async fn humans_txt() -> impl IntoResponse {
+    let site_config = SiteConfig::default();
+    let content = format!(
+        r#"/* TEAM */
+Author: {}
+Site: {}
+Twitter: {}
+GitHub: https://github.com/{}
+LinkedIn: https://linkedin.com/in/{}
+Location: India
+
+/* SITE */
+Last update: {}
+Language: {}
+Doctype: HTML5
+IDE: VS Code
+Standards: HTML5, CSS3, ES6+
+
+/* TECHNOLOGY */
+Backend: Rust, Axum
+Frontend: HTML5, CSS3, JavaScript
+Template: Handlebars
+Hosting: Leapcell
+
+/* THANKS */
+Rust Community
+Axum Framework
+Open Source Contributors
+"#,
+        site_config.author_full_name,
+        site_config.url,
+        site_config.twitter_handle,
+        site_config.github_handle,
+        site_config.linkedin_handle,
+        Local::now().format("%Y-%m-%d"),
+        site_config.language
+    );
+    
+    Response::builder()
+        .status(StatusCode::OK)
+        .header(header::CONTENT_TYPE, "text/plain; charset=utf-8")
+        .header(header::CACHE_CONTROL, "public, max-age=86400")
+        .body(content)
+        .unwrap()
+}
+
+// Generate security.txt for security researchers
+async fn security_txt() -> impl IntoResponse {
+    let site_config = SiteConfig::default();
+    let content = format!(
+        r#"# Security Policy
+Contact: https://github.com/{}
+Expires: 2027-12-31T23:59:59.000Z
+Preferred-Languages: en
+Canonical: {}/.well-known/security.txt
+"#,
+        site_config.github_handle,
+        site_config.url
+    );
+    
+    Response::builder()
+        .status(StatusCode::OK)
+        .header(header::CONTENT_TYPE, "text/plain; charset=utf-8")
+        .header(header::CACHE_CONTROL, "public, max-age=86400")
+        .body(content)
+        .unwrap()
+}
+
+// Generate XML Sitemap for SEO - Enhanced with comprehensive metadata
 async fn sitemap() -> impl IntoResponse {
     let site_config = SiteConfig::default();
     let posts = get_posts(&site_config);
+    let today = Local::now().format("%Y-%m-%d").to_string();
     
     let mut xml = String::from(r#"<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:news="http://www.google.com/schemas/sitemap-news/0.9"
-        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml"
+        xmlns:mobile="http://www.google.com/schemas/sitemap-mobile/1.0">
 "#);
 
-    // Homepage
+    // Homepage - highest priority
     xml.push_str(&format!(
         r#"  <url>
     <loc>{}</loc>
     <lastmod>{}</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
+    <mobile:mobile/>
   </url>
 "#,
         site_config.url,
-        Local::now().format("%Y-%m-%d")
+        today
     ));
 
+    // Collect all unique tags first (before consuming posts)
+    let mut all_tags: Vec<String> = posts.iter()
+        .flat_map(|p| p.tags.iter().cloned())
+        .collect();
+    all_tags.sort();
+    all_tags.dedup();
+
     // Blog posts
-    for post in posts {
+    for post in &posts {
         xml.push_str(&format!(
             r#"  <url>
     <loc>{}/blog/{}</loc>
@@ -681,6 +885,7 @@ async fn sitemap() -> impl IntoResponse {
       <image:loc>{}</image:loc>
       <image:title>{}</image:title>
     </image:image>
+    <mobile:mobile/>
   </url>
 "#,
             site_config.url,
@@ -691,38 +896,124 @@ async fn sitemap() -> impl IntoResponse {
         ));
     }
 
+    // Add tag pages to sitemap
+    for tag in all_tags {
+        xml.push_str(&format!(
+            r#"  <url>
+    <loc>{}/tags/{}</loc>
+    <lastmod>{}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+    <mobile:mobile/>
+  </url>
+"#,
+            site_config.url,
+            tag,
+            today
+        ));
+    }
+
     xml.push_str("</urlset>");
 
     Response::builder()
         .status(StatusCode::OK)
-        .header(header::CONTENT_TYPE, "application/xml")
+        .header(header::CONTENT_TYPE, "application/xml; charset=utf-8")
+        .header(header::CACHE_CONTROL, "public, max-age=3600")
+        .header("X-Robots-Tag", "noindex")
         .body(xml)
         .unwrap()
 }
 
-// Generate robots.txt
+// Generate robots.txt - Enhanced with comprehensive directives
 async fn robots_txt() -> impl IntoResponse {
     let site_config = SiteConfig::default();
     let content = format!(
-        r#"User-agent: *
+        r#"# Robots.txt for {}
+# Generated automatically - Optimized for SEO
+
+# Allow all search engines
+User-agent: *
 Allow: /
+Allow: /blog/
+Allow: /rss.xml
+Allow: /atom.xml
+Allow: /sitemap.xml
+
+# Optimize crawl budget
+Disallow: /api/
+Disallow: /admin/
+Disallow: /*.json$
+Disallow: /*?*
+
+# Crawl-delay for politeness (1 second between requests)
+Crawl-delay: 1
+
+# Google-specific directives
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 0
+
+# Google Image Bot
+User-agent: Googlebot-Image
+Allow: /
+Allow: /*.png$
+Allow: /*.jpg$
+Allow: /*.jpeg$
+Allow: /*.webp$
+Allow: /*.gif$
+
+# Bing
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+# DuckDuckGo
+User-agent: DuckDuckBot
+Allow: /
+
+# Yandex
+User-agent: Yandex
+Allow: /
+Crawl-delay: 2
+
+# Baidu
+User-agent: Baiduspider
+Allow: /
+Crawl-delay: 2
+
+# Block AI training bots (optional - remove if you want AI to train on your content)
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ChatGPT-User
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: Claude-Web
+Disallow: /
 
 # Sitemaps
 Sitemap: {}/sitemap.xml
+Sitemap: {}/sitemap-posts.xml
 
-# Crawl-delay (optional, for politeness)
-Crawl-delay: 1
-
-# Disallow admin or private paths (add as needed)
-# Disallow: /admin/
-# Disallow: /private/
+# Host directive
+Host: {}
 "#,
-        site_config.url
+        site_config.title,
+        site_config.url,
+        site_config.url,
+        site_config.url.replace("https://", "").replace("http://", "")
     );
 
     Response::builder()
         .status(StatusCode::OK)
-        .header(header::CONTENT_TYPE, "text/plain")
+        .header(header::CONTENT_TYPE, "text/plain; charset=utf-8")
+        .header(header::CACHE_CONTROL, "public, max-age=86400")
         .body(content)
         .unwrap()
 }
@@ -780,8 +1071,132 @@ async fn rss_feed() -> impl IntoResponse {
 
     Response::builder()
         .status(StatusCode::OK)
-        .header(header::CONTENT_TYPE, "application/rss+xml")
+        .header(header::CONTENT_TYPE, "application/rss+xml; charset=utf-8")
+        .header(header::CACHE_CONTROL, "public, max-age=3600")
         .body(rss)
+        .unwrap()
+}
+
+// Generate Atom Feed (alternative to RSS, preferred by some readers)
+async fn atom_feed() -> impl IntoResponse {
+    let site_config = SiteConfig::default();
+    let posts = get_posts(&site_config);
+    let now = Local::now().format("%Y-%m-%dT%H:%M:%S%:z").to_string();
+    
+    let mut atom = format!(
+        r#"<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="{}">
+  <title>{}</title>
+  <subtitle>{}</subtitle>
+  <link href="{}/atom.xml" rel="self" type="application/atom+xml"/>
+  <link href="{}" rel="alternate" type="text/html"/>
+  <id>{}/</id>
+  <updated>{}</updated>
+  <author>
+    <name>{}</name>
+    <uri>{}</uri>
+  </author>
+  <generator uri="https://github.com/aryansrao/aryansrao-blogs">Axum Blog Engine</generator>
+  <icon>{}/favicon.png</icon>
+  <logo>{}/logo.png</logo>
+  <rights>© {} {}</rights>
+"#,
+        site_config.language,
+        html_escape::encode_text(&site_config.title),
+        html_escape::encode_text(&site_config.description),
+        site_config.url,
+        site_config.url,
+        site_config.url,
+        now,
+        html_escape::encode_text(&site_config.author_full_name),
+        site_config.url,
+        site_config.url,
+        site_config.url,
+        site_config.copyright_year,
+        site_config.author_full_name
+    );
+
+    for post in posts.iter().take(20) {
+        atom.push_str(&format!(
+            r#"  <entry>
+    <title>{}</title>
+    <link href="{}/blog/{}" rel="alternate" type="text/html"/>
+    <id>{}/blog/{}</id>
+    <published>{}</published>
+    <updated>{}</updated>
+    <author>
+      <name>{}</name>
+    </author>
+    <summary type="html"><![CDATA[{}]]></summary>
+    {}
+  </entry>
+"#,
+            html_escape::encode_text(&post.title),
+            site_config.url,
+            post.slug,
+            site_config.url,
+            post.slug,
+            post.date_iso,
+            post.date_iso,
+            html_escape::encode_text(&post.author),
+            post.summary,
+            post.tags.iter().map(|t| format!("<category term=\"{}\"/>", html_escape::encode_text(t))).collect::<Vec<_>>().join("\n    ")
+        ));
+    }
+
+    atom.push_str("</feed>");
+
+    Response::builder()
+        .status(StatusCode::OK)
+        .header(header::CONTENT_TYPE, "application/atom+xml; charset=utf-8")
+        .header(header::CACHE_CONTROL, "public, max-age=3600")
+        .body(atom)
+        .unwrap()
+}
+
+// Generate dedicated posts sitemap for large sites
+async fn sitemap_posts() -> impl IntoResponse {
+    let site_config = SiteConfig::default();
+    let posts = get_posts(&site_config);
+    
+    let mut xml = String::from(r#"<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+"#);
+
+    for post in posts {
+        let lastmod = post.date_iso.split('T').next().unwrap_or(&post.date_iso);
+        xml.push_str(&format!(
+            r#"  <url>
+    <loc>{}/blog/{}</loc>
+    <lastmod>{}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>{}</image:loc>
+      <image:title>{}</image:title>
+      <image:caption>{}</image:caption>
+    </image:image>
+  </url>
+"#,
+            site_config.url,
+            post.slug,
+            lastmod,
+            post.image,
+            html_escape::encode_text(&post.title),
+            html_escape::encode_text(&post.summary)
+        ));
+    }
+
+    xml.push_str("</urlset>");
+
+    Response::builder()
+        .status(StatusCode::OK)
+        .header(header::CONTENT_TYPE, "application/xml; charset=utf-8")
+        .header(header::CACHE_CONTROL, "public, max-age=86400")
+        .body(xml)
         .unwrap()
 }
 
@@ -2527,11 +2942,19 @@ async fn main() {
         .route("/", get(index))
         .route("/tags/{tag}", get(tag_page))
         .route("/blog/{post_title}", get(single_post))
-        // SEO routes
+        // SEO routes - comprehensive feed & sitemap support
         .route("/sitemap.xml", get(sitemap))
+        .route("/sitemap-posts.xml", get(sitemap_posts))
         .route("/robots.txt", get(robots_txt))
         .route("/rss.xml", get(rss_feed))
         .route("/feed.xml", get(rss_feed))
+        .route("/atom.xml", get(atom_feed))
+        .route("/feed", get(rss_feed))
+        // PWA & SEO metadata files
+        .route("/manifest.json", get(manifest_json))
+        .route("/browserconfig.xml", get(browserconfig_xml))
+        .route("/humans.txt", get(humans_txt))
+        .route("/.well-known/security.txt", get(security_txt))
         .route("/api/search", get(search_posts))
         // GitHub integration routes (public)
         .route("/api/github/repos", get(list_github_repos))

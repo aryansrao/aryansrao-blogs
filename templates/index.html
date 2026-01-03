@@ -1,45 +1,97 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ site.language }}" prefix="og: https://ogp.me/ns# article: https://ogp.me/ns/article#">
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ site.title }} - {{ site.description }}</title>
-    <meta name="title" content="{{ site.title }} - {{ site.description }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    
+    <!-- Primary Meta Tags -->
+    <title>{{ site.title }} - {{ site.tagline }}</title>
+    <meta name="title" content="{{ site.title }} - {{ site.tagline }}">
     <meta name="description" content="{{ site.description }}">
-    <meta name="author" content="{{ site.author }}">
+    <meta name="author" content="{{ site.author_full_name }}">
+    <meta name="keywords" content="{{ site.keywords }}">
+    <meta name="subject" content="Technology Blog">
+    <meta name="copyright" content="{{ site.author_full_name }}">
+    <meta name="language" content="{{ site.language }}">
+    <meta name="classification" content="Technology, Programming, Software Development">
+    <meta name="coverage" content="Worldwide">
+    <meta name="distribution" content="Global">
+    <meta name="rating" content="General">
+    
+    <!-- Search Engine Optimization -->
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
-    <meta name="googlebot" content="index, follow">
-    <meta name="keywords" content="blog, web development, programming, rust, axum, technology, tutorials, coding">
+    <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+    <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large">
+    <meta name="revisit-after" content="3 days">
     <link rel="canonical" href="{{ site.url }}/">
     
-    <link rel="icon" type="image/png" href="/favicon.png">
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <!-- Site Verification -->
+    {{#if site.google_site_verification}}
+    <meta name="google-site-verification" content="{{ site.google_site_verification }}">
+    {{/if}}
+    {{#if site.bing_site_verification}}
+    <meta name="msvalidate.01" content="{{ site.bing_site_verification }}">
+    {{/if}}
+    {{#if site.yandex_verification}}
+    <meta name="yandex-verification" content="{{ site.yandex_verification }}">
+    {{/if}}
     
+    <!-- Favicons & Icons -->
+    <link rel="icon" type="image/png" href="{{ site.favicon }}" sizes="32x32">
+    <link rel="icon" type="image/png" href="{{ site.favicon }}" sizes="16x16">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="{{ site.theme_color }}">
+    <meta name="msapplication-TileColor" content="{{ site.theme_color }}">
+    <meta name="msapplication-config" content="/browserconfig.xml">
+    
+    <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="{{ site.title }}">
     <meta property="og:url" content="{{ site.url }}/">
-    <meta property="og:title" content="{{ site.title }}">
+    <meta property="og:title" content="{{ site.title }} - {{ site.tagline }}">
     <meta property="og:description" content="{{ site.description }}">
-    <meta property="og:image" content="{{ site.url }}/og-image.png">
+    <meta property="og:image" content="{{ site.url }}{{ site.og_image }}">
+    <meta property="og:image:secure_url" content="{{ site.url }}{{ site.og_image }}">
+    <meta property="og:image:type" content="image/png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
-    <meta property="og:locale" content="en_US">
+    <meta property="og:image:alt" content="{{ site.title }} - {{ site.tagline }}">
+    <meta property="og:locale" content="{{ site.locale }}">
+    <meta property="og:updated_time" content="{{ current_date_iso }}">
+    <meta property="fb:profile_id" content="{{ site.author }}">
     
+    <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:site" content="{{ site.twitter_handle }}">
     <meta name="twitter:creator" content="{{ site.twitter_handle }}">
     <meta name="twitter:url" content="{{ site.url }}/">
-    <meta name="twitter:title" content="{{ site.title }}">
+    <meta name="twitter:title" content="{{ site.title }} - {{ site.tagline }}">
     <meta name="twitter:description" content="{{ site.description }}">
-    <meta name="twitter:image" content="{{ site.url }}/og-image.png">
+    <meta name="twitter:image" content="{{ site.url }}{{ site.og_image }}">
+    <meta name="twitter:image:alt" content="{{ site.title }} - {{ site.tagline }}">
+    <meta name="twitter:domain" content="{{ site.url }}">
     
+    <!-- Feed Discovery -->
     <link rel="alternate" type="application/rss+xml" title="{{ site.title }} RSS Feed" href="{{ site.url }}/rss.xml">
+    <link rel="alternate" type="application/atom+xml" title="{{ site.title }} Atom Feed" href="{{ site.url }}/atom.xml">
+    <link rel="alternate" type="application/json" title="{{ site.title }} JSON Feed" href="{{ site.url }}/feed.json">
     
-    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <!-- DNS Prefetch & Preconnect for Performance -->
+    <link rel="dns-prefetch" href="//fonts.googleapis.com">
+    <link rel="dns-prefetch" href="//fonts.gstatic.com">
+    <link rel="dns-prefetch" href="//www.google-analytics.com">
+    <link rel="dns-prefetch" href="//www.googletagmanager.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <!-- Preload Critical Resources -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" as="style">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
+    <!-- JSON-LD Structured Data: WebSite -->
     <script type="application/ld+json">
     {
         "@context": "https://schema.org",
@@ -49,44 +101,131 @@
         "name": "{{ site.title }}",
         "description": "{{ site.description }}",
         "publisher": {
-            "@type": "Person",
-            "@id": "{{ site.url }}/#author",
-            "name": "{{ site.author }}",
-            "url": "{{ site.url }}"
+            "@id": "{{ site.url }}/#person"
         },
-        "inLanguage": "{{ site.language }}"
+        "inLanguage": "{{ site.language }}",
+        "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+                "@type": "EntryPoint",
+                "urlTemplate": "{{ site.url }}/?q={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+        },
+        "copyrightYear": "{{ site.copyright_year }}",
+        "copyrightHolder": {
+            "@id": "{{ site.url }}/#person"
+        }
     }
     </script>
     
+    <!-- JSON-LD Structured Data: Person/Author -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Person",
+        "@id": "{{ site.url }}/#person",
+        "name": "{{ site.author_full_name }}",
+        "url": "{{ site.url }}",
+        "image": {
+            "@type": "ImageObject",
+            "url": "{{ site.url }}{{ site.logo }}",
+            "width": 400,
+            "height": 400
+        },
+        "description": "{{ site.author_bio }}",
+        "jobTitle": "{{ site.author_job_title }}",
+        "sameAs": [
+            "https://github.com/{{ site.github_handle }}",
+            "https://twitter.com/{{ site.twitter_handle }}",
+            "https://linkedin.com/in/{{ site.linkedin_handle }}",
+            "https://aryansrao.github.io"
+        ],
+        "knowsAbout": ["Rust Programming", "Web Development", "Systems Programming", "Open Source", "Software Engineering"],
+        "alumniOf": {
+            "@type": "Organization",
+            "name": "Self-taught Developer"
+        }
+    }
+    </script>
+    
+    <!-- JSON-LD Structured Data: Blog -->
     <script type="application/ld+json">
     {
         "@context": "https://schema.org",
         "@type": "Blog",
         "@id": "{{ site.url }}/#blog",
-        "mainEntityOfPage": "{{ site.url }}/",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "{{ site.url }}/"
+        },
         "name": "{{ site.title }}",
         "description": "{{ site.description }}",
         "url": "{{ site.url }}/",
         "inLanguage": "{{ site.language }}",
+        "isPartOf": {
+            "@id": "{{ site.url }}/#website"
+        },
+        "author": {
+            "@id": "{{ site.url }}/#person"
+        },
         "publisher": {
-            "@type": "Person",
-            "name": "{{ site.author }}",
-            "url": "{{ site.url }}"
+            "@id": "{{ site.url }}/#person"
         },
         "blogPost": [
             {{#each posts}}
             {
                 "@type": "BlogPosting",
+                "@id": "{{ ../site.url }}/blog/{{ this.slug }}#article",
                 "headline": "{{ this.title }}",
                 "url": "{{ ../site.url }}/blog/{{ this.slug }}",
                 "datePublished": "{{ this.date_iso }}",
+                "dateModified": "{{ this.date_iso }}",
                 "author": {
                     "@type": "Person",
                     "name": "{{ this.author }}"
                 },
-                "description": "{{ this.summary }}"
+                "description": "{{ this.summary }}",
+                "keywords": "{{ this.keywords }}",
+                "wordCount": {{ this.word_count }},
+                "timeRequired": "PT{{ this.reading_time }}M"
             }{{#unless @last}},{{/unless}}
             {{/each}}
+        ]
+    }
+    </script>
+    
+    <!-- JSON-LD Structured Data: ItemList (for search engines to show post list) -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        "itemListElement": [
+            {{#each posts}}
+            {
+                "@type": "ListItem",
+                "position": {{ @index }},
+                "url": "{{ ../site.url }}/blog/{{ this.slug }}",
+                "name": "{{ this.title }}"
+            }{{#unless @last}},{{/unless}}
+            {{/each}}
+        ],
+        "numberOfItems": {{ posts_count }}
+    }
+    </script>
+    
+    <!-- JSON-LD Structured Data: BreadcrumbList -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+            {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Home",
+                "item": "{{ site.url }}/"
+            }
         ]
     }
     </script>
