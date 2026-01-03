@@ -1236,7 +1236,7 @@ async fn sitemap() -> impl IntoResponse {
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
     <image:image>
-      <image:loc>{}/og-image.png</image:loc>
+      <image:loc>{}/og.png</image:loc>
       <image:title>{}</image:title>
     </image:image>
     <mobile:mobile/>
@@ -3343,7 +3343,7 @@ async fn main() {
         // Dynamic OG Image generation
         .route("/blog/recents.png", get(og_image_recents))
         .route("/blog/{slug}/og.png", get(og_image))
-        .route("/og-image.png", get(og_image_default))
+        .route("/og.png", get(og_image_default))
         // SEO routes - comprehensive feed & sitemap support
         .route("/sitemap.xml", get(sitemap))
         .route("/sitemap-posts.xml", get(sitemap_posts))
