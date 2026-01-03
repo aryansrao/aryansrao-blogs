@@ -1264,7 +1264,7 @@ async fn sitemap() -> impl IntoResponse {
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
-      <image:loc>{}/og/post/{}</image:loc>
+      <image:loc>{}/blog/{}/og.png</image:loc>
       <image:title>{}</image:title>
       <image:caption>{}</image:caption>
     </image:image>
@@ -1437,7 +1437,7 @@ async fn rss_feed() -> impl IntoResponse {
       <pubDate>{}</pubDate>
       <description><![CDATA[{}]]></description>
       <author>{}</author>
-      <enclosure url="{}/og/post/{}" type="image/png" length="0"/>
+      <enclosure url="{}/blog/{}/og.png" type="image/png" length="0"/>
       {}
     </item>
 "#,
@@ -1509,7 +1509,7 @@ async fn atom_feed() -> impl IntoResponse {
             r#"  <entry>
     <title>{}</title>
     <link href="{}/blog/{}" rel="alternate" type="text/html"/>
-    <link href="{}/og/post/{}" rel="enclosure" type="image/png" title="OG Image"/>
+    <link href="{}/blog/{}/og.png" rel="enclosure" type="image/png" title="OG Image"/>
     <id>{}/blog/{}</id>
     <published>{}</published>
     <updated>{}</updated>
@@ -3342,7 +3342,7 @@ async fn main() {
         .route("/apple-touch-icon.png", get(serve_logo))
         // Dynamic OG Image generation
         .route("/blog/recents.png", get(og_image_recents))
-        .route("/og/post/{slug}", get(og_image))
+        .route("/blog/{slug}/og.png", get(og_image))
         .route("/og-image.png", get(og_image_default))
         // SEO routes - comprehensive feed & sitemap support
         .route("/sitemap.xml", get(sitemap))
