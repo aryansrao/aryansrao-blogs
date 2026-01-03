@@ -1,10 +1,8 @@
 ---
-title: "dorkstart"
+title: "DorkStart - Customizable start page with extremely enhanced dorking features. "
 date: "2025-06-23"
 tags: ["github", "project", "html", "cybersecurity", "dorking", "dorking-tool"]
 summary: "Dorking start page highly customizable"
-author: "aryansrao"
-keywords: "dorkstart, github, open source"
 github_repo: "aryansrao/dorkstart"
 website: "https://dorkstart.netlify.app"
 ---
@@ -212,5 +210,3 @@ All customizations are stored locally using browser's localStorage:
 - **Google Fonts**: Typography (Poppins font family)
 - **WebGL**: Hardware-accelerated graphics
 - **CSS3**: Modern styling and effects
-
-
