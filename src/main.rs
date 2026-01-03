@@ -938,13 +938,13 @@ fn generate_og_image(
         _ => (48, 200, 60),
     };
     
-    // Build title SVG elements with Geist-like font
+    // Build title SVG elements with Geist font
     let mut title_svg = String::new();
     for (i, line) in title_lines.iter().take(3).enumerate() {
         let y = title_y_start + (i as i32 * line_height);
         let escaped_line = html_escape::encode_text(line);
         title_svg.push_str(&format!(
-            "<text x=\"80\" y=\"{}\" font-family=\"SF Pro Display, Inter, Helvetica Neue, Arial\" font-size=\"{}\" font-weight=\"600\" fill=\"#ffffff\">{}</text>",
+            "<text x=\"80\" y=\"{}\" font-family=\"Geist\" font-size=\"{}\" font-weight=\"600\" fill=\"#ffffff\">{}</text>",
             y, title_font_size, escaped_line
         ));
     }
