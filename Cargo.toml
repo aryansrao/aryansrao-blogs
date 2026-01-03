@@ -18,8 +18,8 @@ syntect = "5.2"
 html-escape = "0.2"
 # Lazy static for syntax set initialization
 once_cell = "1.19"
-# HTTP client for GitHub API
-reqwest = { version = "0.12", features = ["json"] }
+# HTTP client for GitHub API - using rustls instead of native-tls to avoid OpenSSL dependency
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 # Base64 decoding for GitHub content
 base64 = "0.22"
 # UUID for session tokens
