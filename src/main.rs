@@ -1228,18 +1228,24 @@ async fn sitemap() -> impl IntoResponse {
         xmlns:mobile="http://www.google.com/schemas/sitemap-mobile/1.0">
 "#);
 
-    // Homepage - highest priority
+    // Homepage - highest priority with OG image
     xml.push_str(&format!(
         r#"  <url>
     <loc>{}</loc>
     <lastmod>{}</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
+    <image:image>
+      <image:loc>{}/og-image.png</image:loc>
+      <image:title>{}</image:title>
+    </image:image>
     <mobile:mobile/>
   </url>
 "#,
         site_config.url,
-        today
+        today,
+        site_config.url,
+        html_escape::encode_text(&site_config.title)
     ));
 
     // Collect all unique tags first (before consuming posts)
@@ -1249,7 +1255,7 @@ async fn sitemap() -> impl IntoResponse {
     all_tags.sort();
     all_tags.dedup();
 
-    // Blog posts
+    // Blog posts with dynamic OG images
     for post in &posts {
         xml.push_str(&format!(
             r#"  <url>
@@ -1258,8 +1264,9 @@ async fn sitemap() -> impl IntoResponse {
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
-      <image:loc>{}</image:loc>
+      <image:loc>{}/og/post/{}</image:loc>
       <image:title>{}</image:title>
+      <image:caption>{}</image:caption>
     </image:image>
     <mobile:mobile/>
   </url>
@@ -1267,8 +1274,10 @@ async fn sitemap() -> impl IntoResponse {
             site_config.url,
             post.slug,
             post.date_iso.split('T').next().unwrap_or(&post.date_iso),
-            post.image,
-            html_escape::encode_text(&post.title)
+            site_config.url,
+            post.slug,
+            html_escape::encode_text(&post.title),
+            html_escape::encode_text(&post.summary)
         ));
     }
 
@@ -1428,6 +1437,7 @@ async fn rss_feed() -> impl IntoResponse {
       <pubDate>{}</pubDate>
       <description><![CDATA[{}]]></description>
       <author>{}</author>
+      <enclosure url="{}/og/post/{}" type="image/png" length="0"/>
       {}
     </item>
 "#,
@@ -1439,6 +1449,8 @@ async fn rss_feed() -> impl IntoResponse {
             post.date_iso,
             post.summary,
             site_config.author,
+            site_config.url,
+            post.slug,
             post.tags.iter().map(|t| format!("<category>{}</category>", html_escape::encode_text(t))).collect::<Vec<_>>().join("\n      ")
         ));
     }
@@ -1497,6 +1509,7 @@ async fn atom_feed() -> impl IntoResponse {
             r#"  <entry>
     <title>{}</title>
     <link href="{}/blog/{}" rel="alternate" type="text/html"/>
+    <link href="{}/og/post/{}" rel="enclosure" type="image/png" title="OG Image"/>
     <id>{}/blog/{}</id>
     <published>{}</published>
     <updated>{}</updated>
@@ -1508,6 +1521,8 @@ async fn atom_feed() -> impl IntoResponse {
   </entry>
 "#,
             html_escape::encode_text(&post.title),
+            site_config.url,
+            post.slug,
             site_config.url,
             post.slug,
             site_config.url,
