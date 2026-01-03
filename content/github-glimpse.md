@@ -1,10 +1,8 @@
 ---
-title: "Glimpse"
+title: "Glimpse - Video chat platform that connects strangers worldwide through instant WebRTC video calls."
 date: "2026-01-02"
 tags: ["github", "project", "html", "open-source", "peer-to-peer", "privacy"]
 summary: "A modern, peer-to-peer video chat platform that connects strangers worldwide through instant WebRTC video calls. Glimpse offers seamless random matching, real-time video/audio streaming, and text chat capabilities with a minimalistic glassmorphic design."
-author: "aryansrao"
-keywords: "Glimpse, github, open source"
 github_repo: "aryansrao/Glimpse"
 website: "https://glimpse-vc.netlify.app"
 ---

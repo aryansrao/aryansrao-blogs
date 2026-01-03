@@ -1,10 +1,8 @@
 ---
-title: "aryansrao-blogs"
+title: "My blog site - Rust, Axum and Handlebars powered blog site."
 date: "2026-01-03"
 tags: ["github", "project", "rust", "axum", "blogs", "rust"]
 summary: "A high-performance, SEO-optimized blog platform built with Rust, Axum, and Handlebars. Features a clean admin panel, GitHub integration for content sync, and comprehensive security measures."
-author: "aryansrao"
-keywords: "aryansrao-blogs, github, open source"
 github_repo: "aryansrao/aryansrao-blogs"
 website: "https://aryansrao-blogs.vercel.app"
 ---
@@ -788,4 +786,3 @@ Contributions are welcome. Please ensure code follows project patterns and inclu
 ## Support
 
 For issues and questions, please check the troubleshooting section above or review the source code documentation.
-

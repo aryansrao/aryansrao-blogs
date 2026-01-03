@@ -1,13 +1,10 @@
 ---
-title: "automated-marketing"
+title: "Automated-Marketing - A Rust command-line tool that extracts business websites and contact emails and send them mockups."
 date: "2026-01-02"
 tags: ["github", "project", "rust", "crawler", "lead-generation", "marketing-automation"]
 summary: "A Rust command-line tool that crawls directory listings (e.g., Yellow Pages US/AU), extracts business websites and contact emails, optionally generates a visual mockup and sends a marketing email with an inline image. It demonstrates web scraping, DOM parsing, headless browser rendering, and SMTP email sending."
-author: "aryansrao"
-keywords: "automated-marketing, github, open source"
 github_repo: "aryansrao/automated-marketing"
 ---
-
 
 # Automated Marketing System
 
@@ -213,5 +210,3 @@ To contribute:
 1. Fork the repository.
 2. Create a feature branch.
 3. Open a pull request with a clear description of changes.
-
-
