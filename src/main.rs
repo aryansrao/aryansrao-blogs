@@ -918,6 +918,32 @@ async fn og_image_default() -> impl IntoResponse {
     }
 }
 
+// Redirect /blog to home page
+async fn blog_redirect() -> impl IntoResponse {
+    Redirect::permanent("/")
+}
+
+// Generate recent posts OG image for /blog/recents.png
+async fn og_image_recents() -> impl IntoResponse {
+    let site_config = SiteConfig::default();
+    let posts = get_posts(&site_config);
+    
+    match generate_og_image_recents(&posts, &site_config) {
+        Ok(png_data) => Response::builder()
+            .status(StatusCode::OK)
+            .header(header::CONTENT_TYPE, "image/png")
+            .header(header::CACHE_CONTROL, "public, max-age=3600") // Cache for 1 hour since it updates
+            .body(axum::body::Body::from(png_data))
+            .unwrap(),
+        Err(e) => {
+            eprintln!("Failed to generate recents OG image: {}", e);
+            Response::builder()
+                .status(StatusCode::INTERNAL_SERVER_ERROR)
+                .body(axum::body::Body::from("Failed to generate image"))
+                .unwrap()
+        }
+    }
+}
 fn generate_og_image(
     title: &str,
     author: &str,
@@ -1072,6 +1098,88 @@ fn wrap_text(text: &str, max_chars: usize) -> String {
     }
     
     lines.join("\n")
+}
+
+fn generate_og_image_recents(posts: &[Post], site_config: &SiteConfig) -> Result<Vec<u8>, String> {
+    let escaped_title = html_escape::encode_text(&site_config.title);
+    
+    // Take the most recent 4 posts
+    let recent_posts: Vec<_> = posts.iter().take(4).collect();
+    
+    // Build post entries SVG
+    let mut post_entries = String::new();
+    let base_y = 200;
+    let row_height = 95;
+    
+    for (i, post) in recent_posts.iter().enumerate() {
+        let y = base_y + (i as i32 * row_height);
+        let escaped_post_title = html_escape::encode_text(&post.title);
+        let date_str = &post.date;
+        let reading_time = format!("{} min read", post.reading_time);
+        
+        // Truncate title if too long
+        let display_title = if escaped_post_title.len() > 50 {
+            format!("{}...", &escaped_post_title[..47])
+        } else {
+            escaped_post_title.to_string()
+        };
+        
+        post_entries.push_str(&format!(
+            r##"
+  <!-- Post {num} -->
+  <rect x="60" y="{y}" width="1080" height="80" rx="8" fill="#111111" stroke="#222222" stroke-width="1"/>
+  <circle cx="95" cy="{cy}" r="6" fill="#ffffff"/>
+  <text x="130" y="{title_y}" font-family="Geist" font-size="22" font-weight="600" fill="#ffffff">{title}</text>
+  <text x="130" y="{meta_y}" font-family="Geist" font-size="14" font-weight="400" fill="#666666">{date} · {reading}</text>
+"##,
+            num = i + 1,
+            y = y,
+            cy = y + 40,
+            title_y = y + 35,
+            meta_y = y + 58,
+            title = display_title,
+            date = date_str,
+            reading = reading_time,
+        ));
+    }
+    
+    let svg = format!(
+        r##"<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <!-- Pure black background -->
+  <rect width="1200" height="630" fill="#000000"/>
+  
+  <!-- Grid pattern -->
+  <defs>
+    <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
+      <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#1a1a1a" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+  
+  <!-- Top accent line -->
+  <rect x="0" y="0" width="1200" height="3" fill="#ffffff"/>
+  
+  <!-- Header section -->
+  <text x="60" y="80" font-family="Geist" font-size="32" font-weight="600" fill="#ffffff">{}</text>
+  <text x="60" y="120" font-family="Geist" font-size="20" font-weight="400" fill="#888888">Recent Posts</text>
+  
+  <!-- Divider -->
+  <rect x="60" y="150" width="1080" height="1" fill="#333333"/>
+  
+  <!-- Post entries -->
+  {}
+  
+  <!-- Footer -->
+  <text x="600" y="590" font-family="Geist" font-size="16" font-weight="400" fill="#555555" text-anchor="middle">View all posts at aryansrao-blogs.leapcell.app</text>
+  
+  <!-- Bottom accent line -->
+  <rect x="0" y="627" width="1200" height="3" fill="#333333"/>
+</svg>"##,
+        escaped_title,
+        post_entries,
+    );
+    
+    svg_to_png(&svg)
 }
 
 fn svg_to_png(svg_str: &str) -> Result<Vec<u8>, String> {
@@ -3209,6 +3317,8 @@ async fn main() {
         // Public routes
         .route("/", get(index))
         .route("/tags/{tag}", get(tag_page))
+        .route("/blog", get(blog_redirect))
+        .route("/blog/", get(blog_redirect))
         .route("/blog/{post_title}", get(single_post))
         // Static assets - favicon/logo
         .route("/logo.png", get(serve_logo))
@@ -3216,6 +3326,7 @@ async fn main() {
         .route("/favicon.ico", get(serve_logo))
         .route("/apple-touch-icon.png", get(serve_logo))
         // Dynamic OG Image generation
+        .route("/blog/recents.png", get(og_image_recents))
         .route("/og/post/{slug}", get(og_image))
         .route("/og-image.png", get(og_image_default))
         // SEO routes - comprehensive feed & sitemap support
