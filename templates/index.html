@@ -325,9 +325,9 @@
         
         .container {
             width: 100%;
-            max-width: 680px;
+            max-width: 1200px;
             margin: 0 auto;
-            padding: 0 1.5rem;
+            padding: 0 2rem;
         }
         
         /* Header */
@@ -431,22 +431,28 @@
         
         /* Hero */
         .hero {
-            padding: 4rem 0 3rem;
+            padding: 3rem 0 2.5rem;
+            background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
         }
         
         .hero h1 {
-            font-size: 3rem;
+            font-size: 3.5rem;
             font-weight: 900;
-            letter-spacing: -0.02em;
-            margin-bottom: 0.625rem;
+            letter-spacing: -0.03em;
+            margin-bottom: 0.75rem;
             color: var(--text-primary);
+            background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
         
         .hero p {
-            font-size: 0.9375rem;
+            font-size: 1rem;
             color: var(--text-secondary);
-            max-width: 440px;
-            line-height: 1.65;
+            max-width: 600px;
+            line-height: 1.7;
+            margin-bottom: 1.5rem;
         }
         
         /* Posts */
@@ -462,9 +468,15 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
             padding-bottom: 0.75rem;
             border-bottom: 1px solid var(--border);
+        }
+        
+        .posts-header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
         }
         
         .posts-header h2 {
@@ -476,25 +488,126 @@
         }
         
         .posts-count {
-            font-size: 1rem;
+            font-size: 0.875rem;
             color: var(--text-muted);
+        }
+        
+        .view-toggle {
+            display: flex;
+            gap: 0.25rem;
+            background: var(--bg-tertiary);
+            padding: 0.25rem;
+            border-radius: 8px;
+        }
+        
+        .view-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px;
+            border: 1px solid transparent;
+            background: transparent;
+            color: var(--text-muted);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .view-btn:hover {
+            color: var(--text-secondary);
+            background: var(--bg-tertiary);
+        }
+        
+        .view-btn.active {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border-color: var(--border);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .view-btn svg {
+            width: 16px;
+            height: 16px;
         }
         
         .post-list {
             list-style: none;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+            transition: filter 0.3s ease, opacity 0.3s ease;
+        }
+        
+        .post-list.transitioning {
+            filter: blur(8px);
+            opacity: 0.6;
+        }
+        
+        @keyframes unblur {
+            from {
+                filter: blur(8px);
+                opacity: 0.6;
+            }
+            to {
+                filter: blur(0);
+                opacity: 1;
+            }
+        }
+        
+        .post-list.animate-in {
+            animation: unblur 0.35s ease-out forwards;
         }
         
         .post-item {
-            border-bottom: 1px solid var(--border);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            background: var(--bg-secondary);
+            position: relative;
         }
         
-        .post-item:last-child {
-            border-bottom: none;
+        .post-item::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 16px;
+            opacity: 0;
+            transition: opacity 0.25s ease;
+            background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, transparent 50%);
+            pointer-events: none;
+        }
+        
+        .post-item:hover {
+            border-color: var(--text-muted);
+            transform: translateY(-4px) scale(1.01);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25), 0 8px 16px rgba(0, 0, 0, 0.15);
+        }
+        
+        .post-item:hover::before {
+            opacity: 1;
+        }
+        
+        .post-thumbnail {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            display: block;
+            background: var(--bg-tertiary);
+            transition: transform 0.3s ease;
+        }
+        
+        .post-item:hover .post-thumbnail {
+            transform: scale(1.02);
+        }
+        
+        .post-content {
+            padding: 1.25rem 1.5rem 1.5rem;
         }
         
         .post-link {
             display: block;
-            padding: 1.25rem 0;
         }
         
         .post-link:hover .post-title {
@@ -525,48 +638,118 @@
         }
         
         .post-title {
-            font-size: 1.5rem;
-            font-weight: 500;
-            letter-spacing: -0.01em;
-            margin-bottom: 0.375rem;
+            font-size: 1.125rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            margin-bottom: 0.625rem;
             color: var(--text-primary);
-            line-height: 1.4;
-            transition: color 0.15s ease;
+            line-height: 1.35;
+            transition: color 0.2s ease;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
         
         .post-summary {
-            font-size: 0.875rem;
+            font-size: 0.8125rem;
             color: var(--text-secondary);
-            line-height: 1.6;
-            margin-bottom: 0.625rem;
+            line-height: 1.65;
+            margin-bottom: 1rem;
             display: -webkit-box;
+            -webkit-line-clamp: 3;
+            line-clamp: 3;
             -webkit-box-orient: vertical;
             overflow: hidden;
+            opacity: 0.85;
         }
         
         .post-tags {
             display: flex;
             flex-wrap: wrap;
-            gap: 0.375rem;
-            padding-bottom: 0.25rem;
+            gap: 0.5rem;
+            margin-top: auto;
         }
         
         .tag {
             font-size: 0.6875rem;
             color: var(--text-muted);
             background: var(--bg-tertiary);
-            padding: 0.1875rem 0.4375rem;
-            border-radius: 2px;
-            transition: color 0.15s ease;
+            padding: 0.25rem 0.5rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+            font-weight: 500;
         }
         
         .tag:hover {
-            color: var(--text-secondary);
+            color: var(--text-primary);
+            border-color: var(--border);
+            background: var(--bg-primary);
+            transform: translateY(-1px);
         }
         
         .tag::before {
             content: '#';
-            opacity: 0.6;
+            opacity: 0.5;
+            margin-right: 1px;
+        }
+        
+        /* List View Styles */
+        .post-list.list-view {
+            display: block;
+        }
+        
+        .post-list.list-view .post-item {
+            border-radius: 0;
+            border: none;
+            border-bottom: 1px solid var(--border);
+            background: transparent;
+        }
+        
+        .post-list.list-view .post-item::before {
+            display: none;
+        }
+        
+        .post-list.list-view .post-item:hover {
+            transform: none;
+            box-shadow: none;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            margin: 0 -1rem;
+            padding: 0 1rem;
+        }
+        
+        .post-list.list-view .post-item:last-child {
+            border-bottom: none;
+        }
+        
+        .post-list.list-view .post-thumbnail {
+            display: none;
+        }
+        
+        .post-list.list-view .post-content {
+            padding: 1.75rem 0;
+        }
+        
+        .post-list.list-view .post-title {
+            font-size: 1.375rem;
+            letter-spacing: -0.02em;
+            margin-bottom: 0.75rem;
+            -webkit-line-clamp: unset;
+            line-clamp: unset;
+        }
+        
+        .post-list.list-view .post-summary {
+            font-size: 0.9375rem;
+            -webkit-line-clamp: 3;
+            line-clamp: 3;
+            opacity: 1;
+        }
+        
+        .post-list.list-view .post-meta {
+            font-size: 0.8125rem;
         }
         
         /* Footer */
@@ -612,9 +795,22 @@
         }
         
         /* Responsive */
+        @media (max-width: 1024px) {
+            .post-list {
+                grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .post-list {
+                grid-template-columns: 1fr;
+            }
+        }
+        
         @media (max-width: 640px) {
             .container {
                 padding: 0 1rem;
+                max-width: 100%;
             }
             
             header {
@@ -698,35 +894,58 @@
         <section class="posts">
             <div class="container">
                 <div class="posts-header">
-                    <h2>All Posts</h2>
-                    <span class="posts-count">{{ posts_count }} articles</span>
+                    <div class="posts-header-left">
+                        <h2>All Posts</h2>
+                        <span class="posts-count">{{ posts_count }} articles</span>
+                    </div>
+                    <div class="view-toggle">
+                        <button class="view-btn" data-view="grid" aria-label="Grid view" title="Grid view">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="3" width="7" height="7" rx="1"/>
+                                <rect x="14" y="3" width="7" height="7" rx="1"/>
+                                <rect x="3" y="14" width="7" height="7" rx="1"/>
+                                <rect x="14" y="14" width="7" height="7" rx="1"/>
+                            </svg>
+                        </button>
+                        <button class="view-btn" data-view="list" aria-label="Article view" title="Article view">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M4 6h16"/>
+                                <path d="M4 10h16"/>
+                                <path d="M4 14h10"/>
+                                <path d="M4 18h8"/>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
                 <ul class="post-list" role="list" aria-label="Blog posts">
                     {{#each posts as |post|}}
                     <li class="post-item">
                         <article itemscope itemtype="https://schema.org/BlogPosting">
                             <a href="/blog/{{ post.slug }}" class="post-link" itemprop="url">
-                                <div class="post-meta">
-                                    <time datetime="{{ post.date_iso }}" itemprop="datePublished" class="post-date">
-                                        {{ post.date }}
-                                    </time>
-                                    <span class="post-separator">/</span>
-                                    <span class="post-reading-time">
-                                        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-                                            <circle cx="12" cy="12" r="10"/>
-                                            <path d="M12 6v6l4 2"/>
-                                        </svg>
-                                        {{ post.reading_time }} min
-                                    </span>
+                                <img src="/blog/{{ post.slug }}/og.png" alt="{{ post.title }}" class="post-thumbnail" loading="lazy" itemprop="image">
+                                <div class="post-content">
+                                    <div class="post-meta">
+                                        <time datetime="{{ post.date_iso }}" itemprop="datePublished" class="post-date">
+                                            {{ post.date }}
+                                        </time>
+                                        <span class="post-separator">/</span>
+                                        <span class="post-reading-time">
+                                            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                                                <circle cx="12" cy="12" r="10"/>
+                                                <path d="M12 6v6l4 2"/>
+                                            </svg>
+                                            {{ post.reading_time }} min
+                                        </span>
+                                    </div>
+                                    <h3 class="post-title" itemprop="headline">{{ post.title }}</h3>
+                                    <p class="post-summary" itemprop="description">{{ post.summary }}</p>
+                                    <div class="post-tags" role="list" aria-label="Tags">
+                                        {{#each post.tags as |tag|}}
+                                        <a href="/tags/{{ tag }}" class="tag" rel="tag">{{ tag }}</a>
+                                        {{/each}}
+                                    </div>
                                 </div>
-                                <h3 class="post-title" itemprop="headline">{{ post.title }}</h3>
-                                <p class="post-summary" itemprop="description">{{ post.summary }}</p>
                             </a>
-                            <div class="post-tags" role="list" aria-label="Tags">
-                                {{#each post.tags as |tag|}}
-                                <a href="/tags/{{ tag }}" class="tag" rel="tag">{{ tag }}</a>
-                                {{/each}}
-                            </div>
                             <meta itemprop="author" content="{{ post.author }}">
                         </article>
                     </li>
@@ -773,6 +992,70 @@
     </footer>
 
     <script>
+        // View toggle functionality
+        (function() {
+            const postList = document.querySelector('.post-list');
+            const viewBtns = document.querySelectorAll('.view-btn');
+            if (!postList || viewBtns.length === 0) return;
+            
+            // Load saved preference (default to list/article view)
+            const savedView = localStorage.getItem('blogViewMode') || 'list';
+            
+            // Apply saved view state on load
+            if (savedView === 'list') {
+                postList.classList.add('list-view');
+            } else {
+                postList.classList.remove('list-view');
+            }
+            
+            // Set correct button active state
+            viewBtns.forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.view === savedView) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            viewBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const view = btn.dataset.view;
+                    const currentView = postList.classList.contains('list-view') ? 'list' : 'grid';
+                    
+                    // Don't do anything if same view
+                    if (view === currentView) return;
+                    
+                    // Update active state
+                    viewBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    
+                    // Add blur transition
+                    postList.classList.add('transitioning');
+                    
+                    setTimeout(() => {
+                        // Toggle list view
+                        if (view === 'list') {
+                            postList.classList.add('list-view');
+                        } else {
+                            postList.classList.remove('list-view');
+                        }
+                        
+                        // Remove blur and animate in
+                        postList.classList.remove('transitioning');
+                        postList.classList.add('animate-in');
+                        
+                        // Clean up animation class
+                        setTimeout(() => {
+                            postList.classList.remove('animate-in');
+                        }, 350);
+                    }, 150);
+                    
+                    // Save preference
+                    localStorage.setItem('blogViewMode', view);
+                });
+            });
+        })();
+
+        // Search functionality
         (function() {
             const input = document.getElementById('searchInput');
             const resultsBox = document.getElementById('searchResults');
