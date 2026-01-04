@@ -225,7 +225,7 @@ axum-blog/
 │   ├── Geist-Medium.ttf     # Embedded font for OG images
 │   ├── Geist-SemiBold.ttf   # Embedded font for OG images
 │   └── Geist-Bold.ttf       # Embedded font for OG images
-├── logo.png                 # Site logo and favicon
+├── logo.webp                 # Site logo and favicon
 ├── Cargo.toml               # Project dependencies
 ├── leapcell.yaml            # Leapcell deployment config
 ├── .env.example             # Environment configuration template
@@ -510,9 +510,9 @@ Currently, syncing is manual. To set up automatic sync:
 - Security policy and contact information
 - Cache: 1 day
 
-**GET /logo.png**, **/favicon.png**, **/favicon.ico**, **/apple-touch-icon.png**
+**GET /logo.webp**, **/favicon.webp**, **/favicon.ico**, **/apple-touch-icon.webp**
 - Logo/favicon files
-- Serves logo.png for all favicon requests
+- Serves logo.webp for all favicon requests
 
 ### Admin Endpoints
 
@@ -801,7 +801,7 @@ COPY --from=builder /app/target/release/aryansrao-blog .
 COPY --from=builder /app/templates templates/
 COPY --from=builder /app/content content/
 COPY --from=builder /app/fonts fonts/
-COPY --from=builder /app/logo.png logo.png
+COPY --from=builder /app/logo.webp logo.webp
 COPY .env.example .env
 EXPOSE 8080
 CMD ["./aryansrao-blog"]

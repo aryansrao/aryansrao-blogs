@@ -80,8 +80,8 @@ impl Default for SiteConfig {
             twitter_handle: "@aryan_s_rao".to_string(),
             github_handle: "aryansrao".to_string(),
             linkedin_handle: "aryansrao".to_string(),
-            logo: "/logo.png".to_string(),
-            favicon: "/logo.png".to_string(),
+            logo: "/logo.webp".to_string(),
+            favicon: "/logo.webp".to_string(),
             og_image: "/og-image.png".to_string(),
             theme_color: "#000000".to_string(),
             keywords: "rust programming, web development, axum framework, systems programming, software engineering, rust tutorials, open source, backend development, API development, rust blog".to_string(),
@@ -696,21 +696,21 @@ async fn manifest_json() -> impl IntoResponse {
   "categories": ["education", "technology", "programming"],
   "icons": [
     {{
-      "src": "/logo.png",
+      "src": "/logo.webp",
       "sizes": "32x32",
-      "type": "image/png",
+      "type": "image/webp",
       "purpose": "any"
     }},
     {{
-      "src": "/logo.png",
+      "src": "/logo.webp",
       "sizes": "192x192",
-      "type": "image/png",
+      "type": "image/webp",
       "purpose": "any maskable"
     }},
     {{
-      "src": "/logo.png",
+      "src": "/logo.webp",
       "sizes": "512x512",
-      "type": "image/png",
+      "type": "image/webp",
       "purpose": "any maskable"
     }}
   ],
@@ -721,7 +721,7 @@ async fn manifest_json() -> impl IntoResponse {
       "short_name": "Posts",
       "description": "View all blog posts",
       "url": "/",
-      "icons": [{{ "src": "/logo.png", "sizes": "96x96" }}]
+      "icons": [{{ "src": "/logo.webp", "sizes": "96x96", "type": "image/webp" }}]
     }}
   ],
   "related_applications": [],
@@ -751,9 +751,9 @@ async fn browserconfig_xml() -> impl IntoResponse {
 <browserconfig>
   <msapplication>
     <tile>
-      <square70x70logo src="/logo.png"/>
-      <square150x150logo src="/logo.png"/>
-      <square310x310logo src="/logo.png"/>
+      <square70x70logo src="/logo.webp"/>
+      <square150x150logo src="/logo.webp"/>
+      <square310x310logo src="/logo.webp"/>
       <TileColor>{}</TileColor>
     </tile>
   </msapplication>
@@ -838,12 +838,12 @@ Canonical: {}/.well-known/security.txt
         .unwrap()
 }
 
-// Serve logo.png as favicon
+// Serve logo.webp as favicon
 async fn serve_logo() -> impl IntoResponse {
-    match fs::read("logo.png") {
+    match fs::read("logo.webp") {
         Ok(data) => Response::builder()
             .status(StatusCode::OK)
-            .header(header::CONTENT_TYPE, "image/png")
+            .header(header::CONTENT_TYPE, "image/webp")
             .header(header::CACHE_CONTROL, "public, max-age=31536000, immutable")
             .body(axum::body::Body::from(data))
             .unwrap(),
@@ -1485,8 +1485,8 @@ async fn atom_feed() -> impl IntoResponse {
     <uri>{}</uri>
   </author>
   <generator uri="https://github.com/aryansrao/aryansrao-blogs">Axum Blog Engine</generator>
-  <icon>{}/logo.png</icon>
-  <logo>{}/logo.png</logo>
+  <icon>{}/logo.webp</icon>
+  <logo>{}/logo.webp</logo>
   <rights>© {} {}</rights>
 "#,
         site_config.language,
@@ -3336,9 +3336,11 @@ async fn main() {
         .route("/blog/", get(blog_redirect))
         .route("/blog/{post_title}", get(single_post))
         // Static assets - favicon/logo
-        .route("/logo.png", get(serve_logo))
+        .route("/logo.webp", get(serve_logo))
+        .route("/favicon.webp", get(serve_logo))
         .route("/favicon.png", get(serve_logo))
         .route("/favicon.ico", get(serve_logo))
+        .route("/apple-touch-icon.webp", get(serve_logo))
         .route("/apple-touch-icon.png", get(serve_logo))
         // Dynamic OG Image generation
         .route("/blog/recents.png", get(og_image_recents))
