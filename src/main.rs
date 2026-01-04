@@ -1197,96 +1197,85 @@ fn wrap_text_to_width(text: &str, max_width_px: f32, font_size_px: i32) -> Vec<S
     lines
 }
 
-fn generate_og_image_recents(posts: &[Post], site_config: &SiteConfig) -> Result<Vec<u8>, String> {
+fn ellipsize_to_width(text: &str, max_width_px: f32, font_size_px: i32) -> String {
+    if estimate_text_width_px(text, font_size_px) <= max_width_px {
+        return text.to_string();
+    }
+
+    let ellipsis = "…";
+    let mut out = String::new();
+    for ch in text.chars() {
+        let mut candidate = out.clone();
+        candidate.push(ch);
+        let with_ellipsis = format!("{}{}", candidate, ellipsis);
+        if estimate_text_width_px(&with_ellipsis, font_size_px) > max_width_px {
+            break;
+        }
+        out = candidate;
+    }
+
+    if out.is_empty() {
+        ellipsis.to_string()
+    } else {
+        format!("{}{}", out, ellipsis)
+    }
+}
+
+fn generate_og_image_recents(posts: &[Post], _site_config: &SiteConfig) -> Result<Vec<u8>, String> {
     // Embed logo as base64
     static LOGO_WEBP: &[u8] = include_bytes!("../logo-small.webp");
     let logo_base64 = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, LOGO_WEBP);
     
-    let escaped_title = html_escape::encode_text(&site_config.title);
+    // Take the latest post
+    let post = posts
+        .first()
+        .ok_or_else(|| "No posts available".to_string())?;
     
-    // Take the most recent 4 posts
-    let recent_posts: Vec<_> = posts.iter().take(4).collect();
-    
-    // Build post entries SVG
-    let mut post_entries = String::new();
-    let base_y = 200;
-    let row_height = 95;
-    
-    for (i, post) in recent_posts.iter().enumerate() {
-        let y = base_y + (i as i32 * row_height);
-        let escaped_post_title = html_escape::encode_text(&post.title);
-        let date_str = &post.date;
-        let reading_time = format!("{} min read", post.reading_time);
-        
-        // Truncate title if too long
-        let display_title = if escaped_post_title.len() > 50 {
-            format!("{}...", &escaped_post_title[..47])
-        } else {
-            escaped_post_title.to_string()
-        };
-        
-        post_entries.push_str(&format!(
-            r##"
-  <!-- Post {num} -->
-  <rect x="80" y="{y}" width="1040" height="80" rx="10" fill="#080808" stroke="#1a1a1a" stroke-width="1"/>
-  <circle cx="115" cy="{cy}" r="6" fill="#666666"/>
-  <text x="145" y="{title_y}" font-family="Geist" font-size="24" font-weight="600" fill="url(#textGradient)">{title}</text>
-  <text x="145" y="{meta_y}" font-family="Geist" font-size="14" font-weight="400" fill="#555555">{date} · {reading}</text>
-"##,
-            num = i + 1,
-            y = y,
-            cy = y + 40,
-            title_y = y + 36,
-            meta_y = y + 58,
-            title = display_title,
-            date = date_str,
-            reading = reading_time,
-        ));
+    // Wrap latest post title to fit in one line, truncate if needed
+    let title_font_size = 42;
+    let title_max_width_px = 880.0;
+    let title_lines = wrap_text_to_width(&post.title, title_max_width_px, title_font_size);
+    let mut title = title_lines.get(0).cloned().unwrap_or_default();
+    if title_lines.len() > 1 {
+        title = ellipsize_to_width(&title, title_max_width_px, title_font_size);
     }
+    let title = html_escape::encode_text(&title).to_string();
+
+    let date_str = &post.date;
     
     let svg = format!(
         r##"<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
   <defs>
-    <!-- Background gradient -->
-    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#000000"/>
-      <stop offset="100%" style="stop-color:#0a0a0a"/>
-    </linearGradient>
-    <!-- Text gradient - white to gray -->
-    <linearGradient id="textGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#ffffff"/>
-      <stop offset="100%" style="stop-color:#909090"/>
-    </linearGradient>
-    <!-- Header gradient -->
-    <linearGradient id="headerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+    <!-- Text gradient -->
+    <linearGradient id="textGradient" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" style="stop-color:#ffffff"/>
       <stop offset="50%" style="stop-color:#b0b0b0"/>
       <stop offset="100%" style="stop-color:#606060"/>
     </linearGradient>
   </defs>
   
-  <!-- Pure black background with gradient -->
-  <rect width="1200" height="630" fill="url(#bgGradient)"/>
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#0a0a0a"/>
   
-  <!-- Logo -->
-  <image x="60" y="50" width="80" height="80" xlink:href="data:image/webp;base64,{}"/>
+  <!-- Logo and BLOGS text centered together -->
+  <image x="220" y="120" width="100" height="100" xlink:href="data:image/webp;base64,{}"/>
+  <text x="350" y="230" font-family="Geist" font-size="160" font-weight="700" fill="url(#textGradient)">BLOGS</text>
   
-  <!-- Header section -->
-  <text x="160" y="85" font-family="Geist" font-size="36" font-weight="700" fill="url(#headerGradient)">{}</text>
-  <text x="160" y="118" font-family="Geist" font-size="20" font-weight="500" fill="#666666">Recent Posts</text>
+  <!-- Divider line -->
+  <line x1="200" y1="315" x2="1000" y2="315" stroke="#1a1a1a" stroke-width="2"/>
   
-  <!-- Divider -->
-  <rect x="80" y="160" width="1040" height="1" fill="#1a1a1a"/>
+  <!-- Latest Post section -->
+  <text x="160" y="385" font-family="Geist" font-size="20" font-weight="600" fill="#888888">LATEST POST</text>
   
-  <!-- Post entries -->
-  {}
+  <!-- Post title (single line, centered) -->
+  <text x="600" y="465" font-family="Geist" font-size="42" font-weight="700" fill="#ffffff" text-anchor="middle">{}</text>
   
-  <!-- Footer -->
-  <text x="600" y="590" font-family="Geist" font-size="16" font-weight="400" fill="#444444" text-anchor="middle">View all posts at aryansrao-blogs.leapcell.app</text>
+  <!-- Post date -->
+  <text x="600" y="515" font-family="Geist" font-size="20" font-weight="500" fill="#888888" text-anchor="middle">{}</text>
 </svg>"##,
         logo_base64,
-        escaped_title,
-        post_entries,
+        title,
+        date_str,
     );
     
     svg_to_png(&svg)
