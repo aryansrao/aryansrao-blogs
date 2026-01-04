@@ -1,6 +1,6 @@
 # Axum Blog - Modern Rust Blog Engine
 
-A high-performance, SEO-optimized blog platform built with Rust, Axum, and Handlebars. Features a clean admin panel, GitHub integration for content sync, and comprehensive security measures.
+A high-performance, SEO-optimized blog platform built with Rust, Axum, and Handlebars. Features a clean admin panel, GitHub integration for content sync, dynamic OG image generation, and comprehensive security measures.
 
 ## Table of Contents
 
@@ -22,14 +22,25 @@ A high-performance, SEO-optimized blog platform built with Rust, Axum, and Handl
 ## Features
 
 ### Core Functionality
-- Clean, minimal black and white UI with responsive design
+- Clean, minimal dark UI with responsive design
 - SEO-optimized with meta tags, Open Graph, Twitter Card support
+- **Dynamic OG image generation** using Geist fonts with dark Vercel-style design
 - Markdown-based content with syntax highlighting
 - Tag-based post organization and filtering
 - Full-text search across posts and content
-- RSS feed generation for subscriber distribution
-- XML sitemap for search engine indexing
-- Reading time estimates on all posts
+- Multiple feed formats (RSS, Atom) with OG image references
+- XML sitemap with comprehensive metadata and OG images
+- Reading time estimates and word counts on all posts
+- **Logo-based branding** for favicon and header
+
+### Dynamic OG Images
+- Homepage OG image at `/og.png`
+- Individual post OG images at `/blog/{slug}/og.png`
+- Recent posts preview at `/blog/recents.png` showing latest 4 posts
+- Geist font family embedded (Medium, SemiBold, Bold)
+- Dark theme with grid pattern and accent lines
+- Automatic title wrapping and metadata display
+- Cached for performance (1 year for posts, 1 hour for recents)
 
 ### Admin Panel
 - Secure authentication with password protection
@@ -50,19 +61,26 @@ A high-performance, SEO-optimized blog platform built with Rust, Axum, and Handl
 - Heading anchor IDs for table of contents navigation
 - Structured data (JSON-LD) for search engines
 - Canonical URL tags
-- Optimized images with fallbacks
-- Google Fonts integration (Inter)
+- OG images in sitemap, RSS, and Atom feeds
+- Comprehensive robots.txt with AI bot support
+- PWA manifest for app-like experience
+- humans.txt and security.txt for transparency
 - Fast server response times with Rust performance
+- Immutable caching for static assets
 
 ## Tech Stack
 
-- **Language**: Rust
+- **Language**: Rust (pure Rust, no OpenSSL dependencies)
 - **Web Framework**: Axum (async/await, minimal overhead)
+- **TLS**: rustls-tls (pure Rust TLS implementation)
 - **Templating**: Handlebars
 - **Markdown Processing**: pulldown-cmark with syntax highlighting
 - **Syntax Highlighting**: Syntect
+- **SVG Rendering**: resvg 0.45, usvg 0.45 for OG image generation
+- **Image Encoding**: tiny-skia 0.11 for PNG generation
+- **Fonts**: Geist (Medium, SemiBold, Bold) embedded in binary
 - **Serialization**: Serde
-- **HTTP Client**: Reqwest (for GitHub API)
+- **HTTP Client**: Reqwest with rustls-tls
 - **Async Runtime**: Tokio
 - **Configuration**: Dotenvy for environment variables
 
@@ -152,13 +170,30 @@ The application automatically sends these security headers:
 **Public Pages**
 - Homepage: http://localhost:8080/
 - Individual Post: http://localhost:8080/blog/{slug}
-- Tag Page: http://localhost:8080/tag/{tag-name}
+- Tag Page: http://localhost:8080/tags/{tag-name}
 - RSS Feed: http://localhost:8080/rss.xml
+- Atom Feed: http://localhost:8080/atom.xml
 - Sitemap: http://localhost:8080/sitemap.xml
+- Posts Sitemap: http://localhost:8080/sitemap-posts.xml
+- Robots.txt: http://localhost:8080/robots.txt
+
+**Dynamic OG Images**
+- Homepage OG: http://localhost:8080/og.png
+- Post OG: http://localhost:8080/blog/{slug}/og.png
+- Recent Posts: http://localhost:8080/blog/recents.png
+
+**SEO & Metadata**
+- PWA Manifest: http://localhost:8080/manifest.json
+- Humans.txt: http://localhost:8080/humans.txt
+- Security.txt: http://localhost:8080/.well-known/security.txt
 
 **Search**
+- API Endpoint: http://localhost:8080/api/search?q={query}
 - Index page: Search all posts by title, tags, summary, and content
 - Post page: Search within the current post content only
+
+**Redirects**
+- `/blog` and `/blog/` redirect to homepage
 
 ### Admin Panel Access
 
@@ -180,13 +215,19 @@ The application automatically sends these security headers:
 ```
 axum-blog/
 ├── src/
-│   └── main.rs              # Main application file (~2500 lines)
+│   └── main.rs              # Main application file (~3400 lines)
 ├── templates/
 │   ├── index.html           # Homepage template
 │   └── single.html          # Single post template
 ├── content/
 │   └── *.md                 # Blog post markdown files
+├── fonts/
+│   ├── Geist-Medium.ttf     # Embedded font for OG images
+│   ├── Geist-SemiBold.ttf   # Embedded font for OG images
+│   └── Geist-Bold.ttf       # Embedded font for OG images
+├── logo.png                 # Site logo and favicon
 ├── Cargo.toml               # Project dependencies
+├── leapcell.yaml            # Leapcell deployment config
 ├── .env.example             # Environment configuration template
 ├── README.md                # This file
 └── .gitignore               # Git ignore rules
@@ -387,10 +428,13 @@ Currently, syncing is manual. To set up automatic sync:
 - Parameters:
   - `slug`: Post slug (e.g., `getting-started`)
 
-**GET /tag/{tag-name}**
+**GET /tags/{tag-name}**
 - Returns posts filtered by tag
 - Parameters:
   - `tag-name`: Tag name (URL-encoded)
+
+**GET /blog**
+- Redirects to homepage (308 Permanent Redirect)
 
 **GET /api/search**
 - Search across all posts
@@ -413,18 +457,62 @@ Currently, syncing is manual. To set up automatic sync:
   }
   ```
 
-**GET /rss.xml**
-- RSS feed with all posts
-- Compliant with RSS 2.0 specification
-- Includes post content, author, and metadata
+**GET /og.png**
+- Homepage OG image (1200x630 PNG)
+- Dark theme with Geist fonts
+- Cache: 1 year (immutable)
+
+**GET /blog/{slug}/og.png**
+- Individual post OG image (1200x630 PNG)
+- Shows post title, author, date, reading time, tags
+- Cache: 1 year (immutable)
+
+**GET /blog/recents.png**
+- Recent posts preview OG image (1200x630 PNG)
+- Shows latest 4 posts with metadata
+- Cache: 1 hour
+
+**GET /rss.xml** or **GET /feed.xml**
+- RSS feed with all posts (RSS 2.0)
+- Includes post content, author, OG image enclosures
+- Cache: 1 hour
+
+**GET /atom.xml**
+- Atom feed with all posts
+- Includes post content, author, OG image links
+- Cache: 1 hour
 
 **GET /sitemap.xml**
-- XML sitemap for search engines
-- Includes all posts with last modification date
+- Master XML sitemap for search engines
+- Includes homepage, posts, tag pages with OG images
+- Cache: 1 hour
+
+**GET /sitemap-posts.xml**
+- Dedicated posts sitemap
 - Compliant with sitemaps.org protocol
+- Cache: 1 hour
 
 **GET /robots.txt**
 - Search engine crawler instructions
+- Allows all crawlers including AI bots (GPT, Claude, etc.)
+- References sitemaps
+
+**GET /manifest.json**
+- PWA manifest for app-like experience
+- Includes app icons, theme colors, shortcuts
+- Cache: 1 day
+
+**GET /humans.txt**
+- Team and technology attribution
+- Cache: 1 day
+
+**GET /.well-known/security.txt**
+- Security policy and contact information
+- Cache: 1 day
+
+**GET /logo.png**, **/favicon.png**, **/favicon.ico**, **/apple-touch-icon.png**
+- Logo/favicon files
+- Serves logo.png for all favicon requests
 
 ### Admin Endpoints
 
@@ -560,8 +648,11 @@ Key dependencies and their purposes:
 - `pulldown-cmark`: Markdown to HTML conversion
 - `syntect`: Syntax highlighting
 - `uuid`: Session token generation
-- `reqwest`: HTTP client for GitHub API
+- `reqwest`: HTTP client for GitHub API (with rustls-tls)
 - `chrono`: Date/time handling
+- `resvg`: SVG rendering for OG images
+- `usvg`: SVG parsing for OG images
+- `tiny-skia`: PNG encoding for OG images
 
 Update dependencies:
 
@@ -575,6 +666,33 @@ cargo update
 # Update specific package
 cargo update -p package-name
 ```
+
+### OG Image Generation
+
+The blog automatically generates dynamic OG (Open Graph) images for:
+
+1. **Homepage** (`/og.png`):
+   - Site title, tagline, author
+   - Dark theme with grid pattern
+   - Cached for 1 year
+
+2. **Individual Posts** (`/blog/{slug}/og.png`):
+   - Post title (auto-wrapped for long titles)
+   - Author, date, reading time, tags
+   - Site branding
+   - Cached for 1 year
+
+3. **Recent Posts** (`/blog/recents.png`):
+   - Latest 4 posts with titles and metadata
+   - Refreshed every hour
+   - Great for social sharing
+
+**Technical Details**:
+- SVG generation with embedded Geist fonts
+- Converted to PNG using resvg/tiny-skia
+- 1200x630px (optimal for social media)
+- No external dependencies required
+- Fonts embedded in binary (fonts/ directory)
 
 ## Deployment
 
@@ -677,14 +795,16 @@ COPY . .
 RUN cargo build --release
 
 FROM debian:bookworm-slim
-RUN apt-get update && apt-get install -y ca-certificates
+RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
-COPY --from=builder /app/target/release/axum-blog .
+COPY --from=builder /app/target/release/aryansrao-blog .
 COPY --from=builder /app/templates templates/
 COPY --from=builder /app/content content/
+COPY --from=builder /app/fonts fonts/
+COPY --from=builder /app/logo.png logo.png
 COPY .env.example .env
 EXPOSE 8080
-CMD ["./axum-blog"]
+CMD ["./aryansrao-blog"]
 ```
 
 Build and run:
@@ -693,6 +813,18 @@ Build and run:
 docker build -t axum-blog .
 docker run -p 8080:8080 --env-file .env axum-blog
 ```
+
+### Leapcell Deployment
+
+This blog is optimized for Leapcell deployment:
+
+1. Ensure `leapcell.yaml` is configured
+2. Uses rustls-tls instead of OpenSSL (no system dependencies)
+3. All fonts are embedded in binary
+4. Push to your repository
+5. Deploy via Leapcell dashboard
+
+**Important**: The blog uses pure Rust dependencies (no OpenSSL) for maximum compatibility with Leapcell's runtime.
 
 ## Troubleshooting
 
@@ -728,6 +860,38 @@ kill -9 <PID>
 - Verify `GITHUB_USERNAME` is correct in .env
 - Check GitHub repository is public
 - Add `GITHUB_TOKEN` to increase rate limits
+- Verify internet connection
+
+### OG images not generating
+
+**Issue: OG images return errors or are blank**
+- Ensure `fonts/` directory exists with Geist font files
+- Check server logs for SVG parsing errors
+- Verify resvg/usvg dependencies are installed
+- Fonts should be embedded in binary (included via `include_bytes!`)
+
+### Search not working
+
+**Issue: Search returns no results**
+- Ensure posts have content and metadata
+- Check that search query is at least 1 character
+- Verify API endpoint is accessible: `/api/search?q=test`
+- Check browser console for JavaScript errors
+
+## License
+
+This project is open source and available under the MIT License.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## Author
+
+**Aryan S Rao**
+- GitHub: [@aryansrao](https://github.com/aryansrao)
+- Twitter: [@aryan_s_rao](https://twitter.com/aryan_s_rao)
+- Blog: [aryansrao-blogs.leapcell.app](https://aryansrao-blogs.leapcell.app)
 - Verify internet connection
 
 ### Search not working
