@@ -946,128 +946,159 @@ async fn og_image_recents() -> impl IntoResponse {
 }
 fn generate_og_image(
     title: &str,
-    author: &str,
+    _author: &str,
     date: &str,
     reading_time: &str,
     tags: &str,
-    site_config: &SiteConfig,
+    _site_config: &SiteConfig,
 ) -> Result<Vec<u8>, String> {
-    // Wrap title text if too long
-    let wrapped_title = wrap_text(title, 38);
-    let title_lines: Vec<&str> = wrapped_title.lines().collect();
-    let title_line_count = title_lines.len().min(3);
+    // Embed logo as base64
+    static LOGO_WEBP: &[u8] = include_bytes!("../logo-small.webp");
+    let logo_base64 = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, LOGO_WEBP);
     
-    // Calculate title Y position and font size based on line count
-    let (title_font_size, title_y_start, line_height) = match title_line_count {
-        1 => (64, 280, 0),
-        2 => (56, 240, 70),
-        _ => (48, 200, 60),
+    // Calculate how many lines we need based on title length
+    let title_char_count = title.len();
+    
+    // Dynamic sizing based on title length - allow up to 5 lines for very long titles
+    let (max_lines, mut title_font_size, title_y_start) = if title_char_count <= 40 {
+        // Short title - 1-2 lines, large font
+        (2, 72, 180)
+    } else if title_char_count <= 80 {
+        // Medium title - 2-3 lines
+        (3, 60, 150)
+    } else if title_char_count <= 120 {
+        // Long title - 3-4 lines
+        (4, 52, 120)
+    } else {
+        // Very long title - 4-5 lines, smaller font
+        (5, 44, 100)
     };
+
+    let title_x = 100;
+    let title_max_width_px = (1200 - title_x - 100) as f32; // keep 100px right padding to avoid clipping
+
+    // Wrap based on an estimated pixel width (more reliable than char-count for large fonts).
+    // If it still doesn't fit within max_lines, step the font size down until it does.
+    let mut title_lines = wrap_text_to_width(title, title_max_width_px, title_font_size);
+    while title_lines.len() > max_lines && title_font_size > 32 {
+        title_font_size -= 4;
+        title_lines = wrap_text_to_width(title, title_max_width_px, title_font_size);
+    }
+
+    let line_height = ((title_font_size as f32) * 1.18).round() as i32;
+    let title_line_count = title_lines.len().min(max_lines);
     
-    // Build title SVG elements with Geist font
+    // Build title SVG elements with gradient text
     let mut title_svg = String::new();
-    for (i, line) in title_lines.iter().take(3).enumerate() {
+    for (i, line) in title_lines.iter().take(max_lines).enumerate() {
         let y = title_y_start + (i as i32 * line_height);
         let escaped_line = html_escape::encode_text(line);
         title_svg.push_str(&format!(
-            "<text x=\"80\" y=\"{}\" font-family=\"Geist\" font-size=\"{}\" font-weight=\"600\" fill=\"#ffffff\">{}</text>",
+            r##"<text x="100" y="{}" font-family="Geist" font-size="{}" font-weight="700" fill="url(#textGradient)">{}</text>"##,
             y, title_font_size, escaped_line
         ));
     }
     
-    // Meta info Y position
-    let meta_y = title_y_start + (title_line_count as i32 * line_height) + 60;
+    // Meta info Y position - adjust based on actual lines used
+    let meta_y = title_y_start + (title_line_count as i32 * line_height) + 50;
     
-    let escaped_author = html_escape::encode_text(author);
     let escaped_date = html_escape::encode_text(date);
     let escaped_reading = html_escape::encode_text(reading_time);
     let escaped_tags = html_escape::encode_text(tags);
-    let escaped_site = html_escape::encode_text(&site_config.title);
     
     let svg = format!(
-        r##"<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+        r##"<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <defs>
+    <!-- Grid pattern -->
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1a1a1a" stroke-width="1"/>
+    </pattern>
+    <!-- Text gradient - white to gray like Glimpse -->
+    <linearGradient id="textGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff"/>
+      <stop offset="50%" style="stop-color:#b0b0b0"/>
+      <stop offset="100%" style="stop-color:#606060"/>
+    </linearGradient>
+  </defs>
+  
   <!-- Pure black background -->
   <rect width="1200" height="630" fill="#000000"/>
-  
-  <!-- Grid pattern -->
-  <defs>
-    <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
-      <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#1a1a1a" stroke-width="1"/>
-    </pattern>
-  </defs>
+  <!-- Grid overlay -->
   <rect width="1200" height="630" fill="url(#grid)"/>
   
-  <!-- Top accent line -->
-  <rect x="0" y="0" width="1200" height="3" fill="#ffffff"/>
-  
-  <!-- Site name -->
-  <text x="80" y="100" font-family="Geist" font-size="18" font-weight="500" fill="#666666">{}</text>
-  
-  <!-- Title -->
+  <!-- Title with gradient -->
   {}
   
-  <!-- Meta info line -->
-  <text x="80" y="{}" font-family="Geist" font-size="20" font-weight="400" fill="#888888">{} · {} · {}</text>
+  <!-- Meta info line - date and reading time only -->
+  <text x="100" y="{}" font-family="Geist" font-size="24" font-weight="500" fill="#777777">{} · {}</text>
   
   <!-- Tags -->
-  <text x="80" y="{}" font-family="Geist" font-size="16" font-weight="400" fill="#555555">{}</text>
+  <text x="100" y="{}" font-family="Geist" font-size="20" font-weight="400" fill="#555555">{}</text>
   
-  <!-- Author at bottom -->
-  <text x="80" y="580" font-family="Geist" font-size="20" font-weight="500" fill="#888888">by {}</text>
+  <!-- Author at bottom left -->
+  <text x="100" y="560" font-family="Geist" font-size="22" font-weight="500" fill="#555555">By </text>
+  <text x="135" y="560" font-family="Geist" font-size="22" font-weight="600" fill="#c0c0c0">Aryan S Rao</text>
   
-  <!-- Bottom accent line -->
-  <rect x="0" y="627" width="1200" height="3" fill="#333333"/>
+  <!-- Logo at bottom right - equal distance from bottom and right (50px) -->
+  <image x="1070" y="500" width="80" height="80" xlink:href="data:image/webp;base64,{}"/>
 </svg>"##,
-        escaped_site,
         title_svg,
         meta_y,
-        escaped_author,
         escaped_date,
         escaped_reading,
         meta_y + 40,
         escaped_tags,
-        escaped_author,
+        logo_base64,
     );
     
     svg_to_png(&svg)
 }
 
 fn generate_og_image_home(site_config: &SiteConfig) -> Result<Vec<u8>, String> {
+    // Embed logo as base64
+    static LOGO_WEBP: &[u8] = include_bytes!("../logo-small.webp");
+    let logo_base64 = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, LOGO_WEBP);
+    
     let escaped_title = html_escape::encode_text(&site_config.title);
     let escaped_tagline = html_escape::encode_text(&site_config.tagline);
     let escaped_author = html_escape::encode_text(&site_config.author_full_name);
     
     let svg = format!(
-        r##"<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
-  <!-- Pure black background -->
-  <rect width="1200" height="630" fill="#000000"/>
-  
-  <!-- Grid pattern -->
+        r##"<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
   <defs>
-    <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
-      <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#1a1a1a" stroke-width="1"/>
-    </pattern>
+    <!-- Background gradient - pure black to dark gray -->
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#000000"/>
+      <stop offset="50%" style="stop-color:#080808"/>
+      <stop offset="100%" style="stop-color:#0f0f0f"/>
+    </linearGradient>
+    <!-- Text gradient - white to gray like Glimpse -->
+    <linearGradient id="titleGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff"/>
+      <stop offset="40%" style="stop-color:#c0c0c0"/>
+      <stop offset="100%" style="stop-color:#707070"/>
+    </linearGradient>
   </defs>
-  <rect width="1200" height="630" fill="url(#grid)"/>
   
-  <!-- Top accent line -->
-  <rect x="0" y="0" width="1200" height="3" fill="#ffffff"/>
+  <!-- Pure black background with gradient -->
+  <rect width="1200" height="630" fill="url(#bgGradient)"/>
   
-  <!-- Main title - centered -->
-  <text x="600" y="280" font-family="Geist" font-size="72" font-weight="600" fill="#ffffff" text-anchor="middle">{}</text>
+  <!-- Logo - top left -->
+  <image x="60" y="50" width="100" height="100" xlink:href="data:image/webp;base64,{}"/>
+  
+  <!-- Main title - centered, HUGE with gradient -->
+  <text x="600" y="320" font-family="Geist" font-size="110" font-weight="700" fill="url(#titleGradient)" text-anchor="middle">{}</text>
   
   <!-- Tagline - centered -->
-  <text x="600" y="360" font-family="Geist" font-size="24" font-weight="400" fill="#888888" text-anchor="middle">{}</text>
+  <text x="600" y="400" font-family="Geist" font-size="28" font-weight="500" fill="#777777" text-anchor="middle">{}</text>
   
   <!-- Tech stack -->
-  <text x="600" y="420" font-family="Geist" font-size="18" font-weight="400" fill="#555555" text-anchor="middle">Rust · Web Development · Open Source</text>
+  <text x="600" y="455" font-family="Geist" font-size="20" font-weight="400" fill="#555555" text-anchor="middle">Rust · Web Development · Open Source</text>
   
   <!-- Author at bottom - centered -->
-  <text x="600" y="560" font-family="Geist" font-size="20" font-weight="500" fill="#666666" text-anchor="middle">{}</text>
-  
-  <!-- Bottom accent line -->
-  <rect x="0" y="627" width="1200" height="3" fill="#333333"/>
+  <text x="600" y="560" font-family="Geist" font-size="22" font-weight="500" fill="#666666" text-anchor="middle">{}</text>
 </svg>"##,
+        logo_base64,
         escaped_title,
         escaped_tagline,
         escaped_author,
@@ -1076,31 +1107,101 @@ fn generate_og_image_home(site_config: &SiteConfig) -> Result<Vec<u8>, String> {
     svg_to_png(&svg)
 }
 
-fn wrap_text(text: &str, max_chars: usize) -> String {
-    let words: Vec<&str> = text.split_whitespace().collect();
-    let mut lines = Vec::new();
-    let mut current_line = String::new();
-    
-    for word in words {
-        if current_line.is_empty() {
-            current_line = word.to_string();
-        } else if current_line.len() + 1 + word.len() <= max_chars {
-            current_line.push(' ');
-            current_line.push_str(word);
+fn estimate_text_width_px(text: &str, font_size_px: i32) -> f32 {
+    let mut units = 0.0f32;
+    for ch in text.chars() {
+        units += match ch {
+            ' ' => 0.28,
+            '-' | '–' | '—' | '·' | '|' => 0.35,
+            '.' | ',' | ':' | ';' | '!' | '?' => 0.28,
+            'A'..='Z' => 0.62,
+            'a'..='z' => 0.52,
+            '0'..='9' => 0.55,
+            _ => 0.60,
+        };
+    }
+    units * (font_size_px as f32)
+}
+
+fn hard_wrap_word_to_width(word: &str, max_width_px: f32, font_size_px: i32) -> Vec<String> {
+    // Worst-case fallback for a single unbreakable word that's wider than the allowed width.
+    let mut parts: Vec<String> = Vec::new();
+    let mut current = String::new();
+
+    for ch in word.chars() {
+        let mut next = current.clone();
+        next.push(ch);
+        if !current.is_empty() && estimate_text_width_px(&next, font_size_px) > max_width_px {
+            parts.push(current);
+            current = ch.to_string();
         } else {
-            lines.push(current_line);
-            current_line = word.to_string();
+            current = next;
         }
     }
-    
-    if !current_line.is_empty() {
-        lines.push(current_line);
+
+    if !current.is_empty() {
+        parts.push(current);
     }
-    
-    lines.join("\n")
+
+    parts
+}
+
+fn wrap_text_to_width(text: &str, max_width_px: f32, font_size_px: i32) -> Vec<String> {
+    let words: Vec<&str> = text.split_whitespace().collect();
+    let mut lines: Vec<String> = Vec::new();
+    let mut current = String::new();
+
+    for word in words {
+        // Keep a standalone dash attached to the previous word if possible.
+        if word == "-" && !current.is_empty() {
+            let candidate = format!("{} -", current);
+            if estimate_text_width_px(&candidate, font_size_px) <= max_width_px {
+                current = candidate;
+                continue;
+            }
+        }
+
+        let candidate = if current.is_empty() {
+            word.to_string()
+        } else {
+            format!("{} {}", current, word)
+        };
+
+        if estimate_text_width_px(&candidate, font_size_px) <= max_width_px {
+            current = candidate;
+            continue;
+        }
+
+        if current.is_empty() {
+            // A single word is too wide; hard-wrap it.
+            let wrapped = hard_wrap_word_to_width(word, max_width_px, font_size_px);
+            lines.extend(wrapped);
+        } else {
+            lines.push(current);
+            current = String::new();
+
+            // Re-try placing the word on a new line (or hard-wrap it).
+            if estimate_text_width_px(word, font_size_px) <= max_width_px {
+                current = word.to_string();
+            } else {
+                let wrapped = hard_wrap_word_to_width(word, max_width_px, font_size_px);
+                lines.extend(wrapped);
+            }
+        }
+    }
+
+    if !current.is_empty() {
+        lines.push(current);
+    }
+
+    lines
 }
 
 fn generate_og_image_recents(posts: &[Post], site_config: &SiteConfig) -> Result<Vec<u8>, String> {
+    // Embed logo as base64
+    static LOGO_WEBP: &[u8] = include_bytes!("../logo-small.webp");
+    let logo_base64 = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, LOGO_WEBP);
+    
     let escaped_title = html_escape::encode_text(&site_config.title);
     
     // Take the most recent 4 posts
@@ -1127,15 +1228,15 @@ fn generate_og_image_recents(posts: &[Post], site_config: &SiteConfig) -> Result
         post_entries.push_str(&format!(
             r##"
   <!-- Post {num} -->
-  <rect x="60" y="{y}" width="1080" height="80" rx="8" fill="#111111" stroke="#222222" stroke-width="1"/>
-  <circle cx="95" cy="{cy}" r="6" fill="#ffffff"/>
-  <text x="130" y="{title_y}" font-family="Geist" font-size="22" font-weight="600" fill="#ffffff">{title}</text>
-  <text x="130" y="{meta_y}" font-family="Geist" font-size="14" font-weight="400" fill="#666666">{date} · {reading}</text>
+  <rect x="80" y="{y}" width="1040" height="80" rx="10" fill="#080808" stroke="#1a1a1a" stroke-width="1"/>
+  <circle cx="115" cy="{cy}" r="6" fill="#666666"/>
+  <text x="145" y="{title_y}" font-family="Geist" font-size="24" font-weight="600" fill="url(#textGradient)">{title}</text>
+  <text x="145" y="{meta_y}" font-family="Geist" font-size="14" font-weight="400" fill="#555555">{date} · {reading}</text>
 "##,
             num = i + 1,
             y = y,
             cy = y + 40,
-            title_y = y + 35,
+            title_y = y + 36,
             meta_y = y + 58,
             title = display_title,
             date = date_str,
@@ -1144,37 +1245,46 @@ fn generate_og_image_recents(posts: &[Post], site_config: &SiteConfig) -> Result
     }
     
     let svg = format!(
-        r##"<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
-  <!-- Pure black background -->
-  <rect width="1200" height="630" fill="#000000"/>
-  
-  <!-- Grid pattern -->
+        r##"<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
   <defs>
-    <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
-      <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#1a1a1a" stroke-width="1"/>
-    </pattern>
+    <!-- Background gradient -->
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#000000"/>
+      <stop offset="100%" style="stop-color:#0a0a0a"/>
+    </linearGradient>
+    <!-- Text gradient - white to gray -->
+    <linearGradient id="textGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#ffffff"/>
+      <stop offset="100%" style="stop-color:#909090"/>
+    </linearGradient>
+    <!-- Header gradient -->
+    <linearGradient id="headerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff"/>
+      <stop offset="50%" style="stop-color:#b0b0b0"/>
+      <stop offset="100%" style="stop-color:#606060"/>
+    </linearGradient>
   </defs>
-  <rect width="1200" height="630" fill="url(#grid)"/>
   
-  <!-- Top accent line -->
-  <rect x="0" y="0" width="1200" height="3" fill="#ffffff"/>
+  <!-- Pure black background with gradient -->
+  <rect width="1200" height="630" fill="url(#bgGradient)"/>
+  
+  <!-- Logo -->
+  <image x="60" y="50" width="80" height="80" xlink:href="data:image/webp;base64,{}"/>
   
   <!-- Header section -->
-  <text x="60" y="80" font-family="Geist" font-size="32" font-weight="600" fill="#ffffff">{}</text>
-  <text x="60" y="120" font-family="Geist" font-size="20" font-weight="400" fill="#888888">Recent Posts</text>
+  <text x="160" y="85" font-family="Geist" font-size="36" font-weight="700" fill="url(#headerGradient)">{}</text>
+  <text x="160" y="118" font-family="Geist" font-size="20" font-weight="500" fill="#666666">Recent Posts</text>
   
   <!-- Divider -->
-  <rect x="60" y="150" width="1080" height="1" fill="#333333"/>
+  <rect x="80" y="160" width="1040" height="1" fill="#1a1a1a"/>
   
   <!-- Post entries -->
   {}
   
   <!-- Footer -->
-  <text x="600" y="590" font-family="Geist" font-size="16" font-weight="400" fill="#555555" text-anchor="middle">View all posts at aryansrao-blogs.leapcell.app</text>
-  
-  <!-- Bottom accent line -->
-  <rect x="0" y="627" width="1200" height="3" fill="#333333"/>
+  <text x="600" y="590" font-family="Geist" font-size="16" font-weight="400" fill="#444444" text-anchor="middle">View all posts at aryansrao-blogs.leapcell.app</text>
 </svg>"##,
+        logo_base64,
         escaped_title,
         post_entries,
     );
